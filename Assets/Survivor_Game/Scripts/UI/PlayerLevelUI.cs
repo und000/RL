@@ -69,6 +69,7 @@ public class PlayerLevelUI : MonoBehaviour
         levelTextTransform.sizeDelta = new Vector2(120f, 40f);
 
         levelText = levelTextObject.GetComponent<TextMeshProUGUI>();
+        GameFontManager.ApplyFont(levelText);
         levelText.fontSize = 28f;
         levelText.fontStyle = FontStyles.Bold;
         levelText.alignment = TextAlignmentOptions.Center;

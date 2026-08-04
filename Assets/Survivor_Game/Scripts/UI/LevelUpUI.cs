@@ -139,6 +139,7 @@ public class LevelUpUI : MonoBehaviour
         textTransform.sizeDelta = size;
 
         TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
+        GameFontManager.ApplyFont(text);
         text.fontSize = fontSize;
         text.fontStyle = FontStyles.Bold;
         text.alignment = TextAlignmentOptions.Center;
