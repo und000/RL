@@ -243,6 +243,8 @@ GameObject:
   - component: {fileID: 402671751}
   - component: {fileID: 402671750}
   - component: {fileID: 402671754}
+  - component: {fileID: 402671755}
+  - component: {fileID: 402671756}
   m_Layer: 5
   m_Name: GameUI
   m_TagString: Untagged
@@ -349,6 +351,34 @@ MonoBehaviour:
   playerHealth: {fileID: 859371145}
   healthSlider: {fileID: 1657778945}
   healthText: {fileID: 1135365996}
+--- !u!114 &402671755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402671749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81d29f3de4e84efba963fb6a5fc57f41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerLevelUI
+  playerLevel: {fileID: 859371146}
+  experienceSlider: {fileID: 982218655}
+  levelText: {fileID: 0}
+--- !u!114 &402671756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402671749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ae64db81ad64302be73629dc04631b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevelUpUI
+  playerLevel: {fileID: 859371146}
 --- !u!1 &497158698
 GameObject:
   m_ObjectHideFlags: 0
@@ -963,7 +993,7 @@ GameObject:
   - component: {fileID: 982218654}
   - component: {fileID: 982218655}
   m_Layer: 5
-  m_Name: ExpBar
+  m_Name: ExperienceBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1036,7 +1066,7 @@ MonoBehaviour:
   m_Direction: 0
   m_MinValue: 0
   m_MaxValue: 3
-  m_WholeNumbers: 0
+  m_WholeNumbers: 1
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
