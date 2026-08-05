@@ -28,7 +28,7 @@ public class Projectile : MonoBehaviour
     private Vector2 customKnockbackDirection = Vector2.up;
 
     private Rigidbody2D body;
-    private int damage;
+    private DamageData damageData;
     private Vector2 travelDirection;
     private Vector2 attackOrigin;
 
@@ -37,9 +37,12 @@ public class Projectile : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
     }
 
-    public void Initialize(Vector2 direction, float weaponSpeed, int newDamage)
+    public void Initialize(
+        Vector2 direction,
+        float weaponSpeed,
+        DamageData newDamageData)
     {
-        damage = newDamage;
+        damageData = newDamageData;
         travelDirection = direction.normalized;
         attackOrigin = transform.position;
         float finalSpeed = weaponSpeed * speedMultiplier;
@@ -55,7 +58,7 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        enemyHealth.TakeDamage(damage);
+        enemyHealth.TakeDamage(damageData);
 
         if (other.TryGetComponent(out EnemyKnockback enemyKnockback))
         {

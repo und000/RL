@@ -1,14 +1,20 @@
 using UnityEngine;
 
+[RequireComponent(typeof(PlayerCombatStats))]
 public class AutoWeapon : MonoBehaviour
 {
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField, Min(0.05f)] private float attackInterval = 0.8f;
     [SerializeField, Min(0f)] private float attackRange = 8f;
     [SerializeField, Min(0f)] private float projectileSpeed = 8f;
-    [SerializeField, Min(1)] private int projectileDamage = 1;
 
     private float attackTimer;
+    private PlayerCombatStats combatStats;
+
+    private void Awake()
+    {
+        combatStats = GetComponent<PlayerCombatStats>();
+    }
 
     private void Update()
     {
@@ -72,6 +78,10 @@ public class AutoWeapon : MonoBehaviour
             return;
         }
 
-        projectile.Initialize(direction, projectileSpeed, projectileDamage);
+        projectile.Initialize(
+            direction,
+            projectileSpeed,
+            combatStats.CreateDamageData()
+        );
     }
 }

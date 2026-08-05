@@ -8,7 +8,13 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField, Min(1f)] private float spawnRadius = 10f;
     [SerializeField, Min(1)] private int maxEnemies = 20;
 
+    [Header("임시 보스")]
+    [SerializeField] private GameObject bossPrefab;
+    [SerializeField, Min(0f)] private float bossSpawnDelay = 20f;
+
     private float spawnTimer;
+    private float elapsedTime;
+    private bool bossSpawned;
 
     private void Start()
     {
@@ -28,6 +34,9 @@ public class EnemySpawner : MonoBehaviour
 
     private void Update()
     {
+        elapsedTime += Time.deltaTime;
+        TrySpawnBoss();
+
         spawnTimer -= Time.deltaTime;
         if (spawnTimer > 0f)
         {
@@ -43,7 +52,23 @@ public class EnemySpawner : MonoBehaviour
         SpawnEnemy();
     }
 
+    private void TrySpawnBoss()
+    {
+        if (bossSpawned || bossPrefab == null || elapsedTime < bossSpawnDelay)
+        {
+            return;
+        }
+
+        bossSpawned = true;
+        SpawnAtRandomEdge(bossPrefab);
+    }
+
     private void SpawnEnemy()
+    {
+        SpawnAtRandomEdge(enemyPrefab);
+    }
+
+    private void SpawnAtRandomEdge(GameObject prefab)
     {
         Vector2 randomDirection = Random.insideUnitCircle;
         if (randomDirection == Vector2.zero)
@@ -53,6 +78,6 @@ public class EnemySpawner : MonoBehaviour
 
         Vector2 spawnPosition = (Vector2)spawnCenter.position +
             randomDirection.normalized * spawnRadius;
-        Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+        Instantiate(prefab, spawnPosition, Quaternion.identity);
     }
 }

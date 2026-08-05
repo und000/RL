@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &6911391679415815211
+--- !u!1 &8100000000000000001
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,46 +8,47 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2216046368987165906}
-  - component: {fileID: 8913356752899480372}
-  - component: {fileID: 9038054077426685335}
-  - component: {fileID: 6251496979510282294}
-  - component: {fileID: 1994312611251823439}
-  - component: {fileID: 3755170266350585659}
-  - component: {fileID: 9147379770449403647}
-  - component: {fileID: 8401838474382089401}
-  - component: {fileID: 7408927385107219442}
-  - component: {fileID: 2962347032998345271}
+  - component: {fileID: 8100000000000000002}
+  - component: {fileID: 8100000000000000003}
+  - component: {fileID: 8100000000000000004}
+  - component: {fileID: 8100000000000000005}
+  - component: {fileID: 8100000000000000006}
+  - component: {fileID: 8100000000000000007}
+  - component: {fileID: 8100000000000000008}
+  - component: {fileID: 8100000000000000009}
+  - component: {fileID: 8100000000000000010}
+  - component: {fileID: 8100000000000000011}
+  - component: {fileID: 8100000000000000012}
   m_Layer: 6
-  m_Name: Enemy
+  m_Name: Boss_1
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2216046368987165906
+--- !u!4 &8100000000000000002
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &8913356752899480372
+--- !u!212 &8100000000000000003
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -90,7 +91,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 0.5613208, b: 0.9933592, a: 1}
+  m_Color: {r: 0.55, g: 0.12, b: 0.75, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -99,19 +100,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!50 &9038054077426685335
+--- !u!50 &8100000000000000004
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_BodyType: 0
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 3
   m_LinearDamping: 0
   m_AngularDamping: 0
   m_GravityScale: 0
@@ -126,13 +127,13 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!61 &6251496979510282294
+--- !u!61 &8100000000000000005
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -172,58 +173,59 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &1994312611251823439
+--- !u!114 &8100000000000000006
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30a2f189713476442962167e7cb842d3, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
-  moveSpeed: 2
-  separationRadius: 1.2
+  moveSpeed: 1.5
+  separationRadius: 2
   separationStrength: 1.5
   movementDeadZone: 0.08
---- !u!114 &3755170266350585659
+--- !u!114 &8100000000000000007
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e9438a8ab2f158f409e2382b8c1b0141, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
-  maxHealth: 60
-  defense: 0
+  maxHealth: 600
+  defense: 10
   experienceGemPrefab: {fileID: 2295939921779772334, guid: 92ca83c1e78e38c479e631929ac419ca, type: 3}
---- !u!114 &9147379770449403647
+  myExperience: 10
+--- !u!114 &8100000000000000008
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1478951c69595914db80f473601951ad, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyContactDamage
-  contactDamage: 10
+  contactDamage: 20
   damageInterval: 1
---- !u!114 &8401838474382089401
+--- !u!114 &8100000000000000009
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd5aa7eb32744b5f93f5e37207287557, type: 3}
@@ -231,17 +233,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHitEffect
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.08
-  shakeStrength: 0.12
+  shakeStrength: 0.08
   shakeDuration: 0.12
   shakeInterval: 0.015
   effectCooldown: 0.05
---- !u!114 &7408927385107219442
+--- !u!114 &8100000000000000010
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5e25df0e760491798b587ba3c833865, type: 3}
@@ -249,25 +251,43 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyKnockback
   knockbackResistance: 0
   postKnockbackStopDuration: 0.2
---- !u!114 &2962347032998345271
+--- !u!114 &8100000000000000011
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6911391679415815211}
+  m_GameObject: {fileID: 8100000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 34fe23f02e7c4b59bb9426e50e8dd76b, type: 3}
+  m_Script: {fileID: 11500000, guid: a1111111111111111111111111111111, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyHealthBar
-  visibleDuration: 2
-  barOffset: {x: 0, y: 1.2}
-  barWidth: 1.4
-  barHeight: 0.16
-  backgroundColor: {r: 0.08, g: 0.08, b: 0.08, a: 0.9}
-  fillColor: {r: 0.9, g: 0.12, b: 0.12, a: 1}
-  sortingOrder: 20
+  m_EditorClassIdentifier: Assembly-CSharp::BossRangedAttack
+  attackInterval: 2
+  firstAttackDelay: 1
+  projectileSprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  projectileColor: {r: 0.75, g: 0.2, b: 1, a: 1}
+  projectileScale: 0.35
+  projectileSpeed: 5
+  projectileDamage: 10
+  projectileLifeTime: 6
+--- !u!114 &8100000000000000012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3333333333333333333333333333333, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BossHealthBarUI
+  anchoredPosition: {x: 0, y: -45}
+  barWidth: 600
+  barHeight: 32
+  backgroundColor: {r: 0.04, g: 0.04, b: 0.04, a: 0.95}
+  fillColor: {r: 0.65, g: 0.05, b: 0.12, a: 1}
   damageTrailColor: {r: 1, g: 1, b: 1, a: 1}
-  damageTrailDelay: 0.25
-  damageTrailDuration: 0.45
+  damageTrailDelay: 0.4
+  damageTrailDuration: 0.8

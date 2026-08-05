@@ -774,6 +774,7 @@ GameObject:
   - component: {fileID: 859371145}
   - component: {fileID: 859371146}
   - component: {fileID: 859371147}
+  - component: {fileID: 859371148}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -958,7 +959,6 @@ MonoBehaviour:
   attackInterval: 0.8
   attackRange: 8
   projectileSpeed: 8
-  projectileDamage: 1
 --- !u!114 &859371145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -971,7 +971,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e31ef64d44232e44964a306eedc3926, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 5
+  maxHealth: 50
+  startingHealthGrowthRate: 0.1
+  healthGrowthDecreasePerLevel: 0.002
+  minimumHealthGrowthRate: 0.01
 --- !u!114 &859371146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -999,6 +1002,28 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPickupRange
   pickupRange: 2.5
+--- !u!114 &859371148
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 859371138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6666666666666666666666666666666, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatStats
+  characterBaseAttack: 20
+  weaponAttack: 0
+  equipmentFlatAttack: 0
+  defaultGrowthRate: 0.03
+  growthOverrides: []
+  damageIncreaseRate: 0
+  armorPenetrationRate: 0
+  flatArmorPenetration: 0
+  trueDamageRate: 0
+  minimumNormalDamage: 10
 --- !u!1 &982218653
 GameObject:
   m_ObjectHideFlags: 0
@@ -1460,6 +1485,8 @@ MonoBehaviour:
   spawnInterval: 1.5
   spawnRadius: 10
   maxEnemies: 20
+  bossPrefab: {fileID: 8100000000000000001, guid: d4444444444444444444444444444444, type: 3}
+  bossSpawnDelay: 20
 --- !u!4 &1723275846
 Transform:
   m_ObjectHideFlags: 0

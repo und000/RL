@@ -11,6 +11,7 @@ public class PlayerLevel : MonoBehaviour
     private int experienceToNextLevel;
 
     public event Action OnProgressChanged;
+    public event Action<int> OnLevelUp;
 
     private void Awake()
     {
@@ -44,5 +45,6 @@ public class PlayerLevel : MonoBehaviour
         experienceToNextLevel = Mathf.CeilToInt(
             experienceToNextLevel * experienceGrowthMultiplier
         );
+        OnLevelUp?.Invoke(currentLevel);
     }
 }

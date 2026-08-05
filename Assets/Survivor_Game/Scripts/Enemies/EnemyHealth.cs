@@ -4,6 +4,7 @@ using UnityEngine;
 public class EnemyHealth : MonoBehaviour
 {
     [SerializeField, Min(1)] private int maxHealth = 3;
+    [SerializeField, Min(0)] private int defense;
     [SerializeField] private GameObject experienceGemPrefab;
     [SerializeField, Min(1)] private int myExperience = 1;
 
@@ -16,14 +17,26 @@ public class EnemyHealth : MonoBehaviour
         currentHealth = maxHealth;
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(DamageData damageData)
     {
-        if (damage <= 0 || currentHealth <= 0)
+        if (currentHealth <= 0)
         {
             return;
         }
 
-        currentHealth = Mathf.Max(currentHealth - damage, 0);
+        float remainingDefense = Mathf.Max(
+            0f,
+            defense - damageData.FlatArmorPenetration
+        );
+        float effectiveDefense = remainingDefense *
+            (1f - damageData.ArmorPenetrationRate);
+        int normalDamage = Mathf.Max(
+            damageData.MinimumDamage,
+            Mathf.RoundToInt(damageData.NormalDamage - effectiveDefense)
+        );
+        int trueDamage = Mathf.Max(0, Mathf.RoundToInt(damageData.TrueDamage));
+        int finalDamage = normalDamage + trueDamage;
+        currentHealth = Mathf.Max(currentHealth - finalDamage, 0);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
         if (currentHealth == 0)
         {
@@ -39,6 +52,11 @@ public class EnemyHealth : MonoBehaviour
     public int GetMaxHealth()
     {
         return maxHealth;
+    }
+
+    public int GetDefense()
+    {
+        return defense;
     }
 
     private void Die()
