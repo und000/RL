@@ -28,9 +28,10 @@ public class LevelUpUI : MonoBehaviour
         }
 
         previousLevel = playerLevel.GetCurrentLevel();
+        playerLevel.OnProgressChanged += HandleProgressChanged;
     }
 
-    private void Update()
+    private void HandleProgressChanged()
     {
         int currentLevel = playerLevel.GetCurrentLevel();
 
@@ -41,6 +42,19 @@ public class LevelUpUI : MonoBehaviour
 
         previousLevel = currentLevel;
         ShowLevelUpPanel(currentLevel);
+    }
+
+    private void OnDestroy()
+    {
+        if (playerLevel != null)
+        {
+            playerLevel.OnProgressChanged -= HandleProgressChanged;
+        }
+
+        if (levelUpPanel != null && levelUpPanel.activeSelf)
+        {
+            Time.timeScale = timeScaleBeforePause;
+        }
     }
 
     private void ShowLevelUpPanel(int currentLevel)

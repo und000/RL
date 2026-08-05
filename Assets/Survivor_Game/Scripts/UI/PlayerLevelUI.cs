@@ -31,12 +31,16 @@ public class PlayerLevelUI : MonoBehaviour
             return;
         }
 
+        playerLevel.OnProgressChanged += UpdateLevelUI;
         UpdateLevelUI();
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        UpdateLevelUI();
+        if (playerLevel != null)
+        {
+            playerLevel.OnProgressChanged -= UpdateLevelUI;
+        }
     }
 
     private void UpdateLevelUI()

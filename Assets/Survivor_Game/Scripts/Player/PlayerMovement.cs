@@ -5,17 +5,12 @@ using UnityEngine.InputSystem;
 [AddComponentMenu("Player Movement")]
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField]
-    [Min(0f)]
-    private float walkSpeed = 5f;
-
-    [SerializeField]
-    [Min(0f)]
-    private float runSpeed = 10f;
+    [SerializeField, Min(0f)] private float walkSpeed = 5f;
+    [SerializeField, Min(0f)] private float runSpeed = 10f;
 
     private Rigidbody2D body;
     private Vector2 moveInput;
-    private bool isSprinting; // 달리기 여부
+    private bool isSprinting;
 
     private void Awake()
     {
@@ -25,7 +20,6 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         Keyboard keyboard = Keyboard.current;
-
         if (keyboard == null)
         {
             moveInput = Vector2.zero;
@@ -38,38 +32,34 @@ public class PlayerMovement : MonoBehaviour
 
         if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed)
         {
-            horizontal -= 1f;
+            horizontal--;
         }
 
         if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed)
         {
-            horizontal += 1f;
+            horizontal++;
         }
 
         if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed)
         {
-            vertical -= 1f;
+            vertical--;
         }
 
         if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed)
         {
-            vertical += 1f;
+            vertical++;
         }
-        
-        moveInput = new Vector2(horizontal, vertical);
-        moveInput = Vector2.ClampMagnitude(moveInput, 1f);
 
-        isSprinting = keyboard.shiftKey.isPressed; // 쉬프트 누르면 대시
+        moveInput = Vector2.ClampMagnitude(
+            new Vector2(horizontal, vertical),
+            1f
+        );
+        isSprinting = keyboard.shiftKey.isPressed;
     }
 
     private void FixedUpdate()
     {
-        float currentSpeed = walkSpeed;
-        if (isSprinting)
-        {
-            currentSpeed = runSpeed; // 속도를 대시 속도로 변경
-        }
-
+        float currentSpeed = isSprinting ? runSpeed : walkSpeed;
         body.linearVelocity = moveInput * currentSpeed;
     }
 

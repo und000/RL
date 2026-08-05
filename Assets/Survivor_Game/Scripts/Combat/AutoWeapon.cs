@@ -2,38 +2,23 @@ using UnityEngine;
 
 public class AutoWeapon : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject projectilePrefab;
-
-    [SerializeField]
-    [Min(0.05f)]
-    private float attackInterval = 0.8f;
-
-    [SerializeField]
-    [Min(0f)]
-    private float attackRange = 8f;
-
-    [SerializeField]
-    [Min(0f)]
-    private float projectileSpeed = 8f;
-
-    [SerializeField]
-    [Min(1)]
-    private int projectileDamage = 1;
+    [SerializeField] private GameObject projectilePrefab;
+    [SerializeField, Min(0.05f)] private float attackInterval = 0.8f;
+    [SerializeField, Min(0f)] private float attackRange = 8f;
+    [SerializeField, Min(0f)] private float projectileSpeed = 8f;
+    [SerializeField, Min(1)] private int projectileDamage = 1;
 
     private float attackTimer;
 
     private void Update()
     {
         attackTimer -= Time.deltaTime;
-
         if (attackTimer > 0f)
         {
             return;
         }
 
         Transform target = FindNearestEnemy();
-
         if (target == null)
         {
             return;
@@ -46,16 +31,12 @@ public class AutoWeapon : MonoBehaviour
     private Transform FindNearestEnemy()
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
         Transform nearestEnemy = null;
         float nearestDistanceSqr = attackRange * attackRange;
 
         foreach (GameObject enemy in enemies)
         {
-            Vector2 offset =
-                (Vector2)enemy.transform.position -
-                (Vector2)transform.position;
-
+            Vector2 offset = enemy.transform.position - transform.position;
             float distanceSqr = offset.sqrMagnitude;
 
             if (distanceSqr < nearestDistanceSqr)
@@ -72,34 +53,25 @@ public class AutoWeapon : MonoBehaviour
     {
         if (projectilePrefab == null)
         {
-            Debug.LogError("AutoWeaponø° Projectile Prefab¿Ã ø¨∞·µ«¡ˆ æ æ“Ω¿¥œ¥Ÿ.");
+            Debug.LogError("AutoWeaponÏóê Projectile PrefabÏù¥ Ïó∞Í≤∞ÎêòÏßÄ ÏïäÏïòÏäµÎãàÎã§.");
             enabled = false;
             return;
         }
 
-        Vector2 direction =
-            ((Vector2)target.position - (Vector2)transform.position).normalized;
-
+        Vector2 direction = (target.position - transform.position).normalized;
         GameObject projectileObject = Instantiate(
             projectilePrefab,
             transform.position,
             Quaternion.identity
         );
 
-        Projectile projectile =
-            projectileObject.GetComponent<Projectile>();
-
-        if (projectile == null)
+        if (!projectileObject.TryGetComponent(out Projectile projectile))
         {
-            Debug.LogError("Projectile «¡∏Æ∆’ø° Projectile Ω∫≈©∏≥∆Æ∞° æ¯Ω¿¥œ¥Ÿ.");
+            Debug.LogError("Projectile ÌîÑÎ¶¨ÌåπÏóê Projectile Ïä§ÌÅ¨Î¶ΩÌä∏Í∞Ä ÏóÜÏäµÎãàÎã§.");
             Destroy(projectileObject);
             return;
         }
 
-        projectile.Initialize(
-            direction,
-            projectileSpeed,
-            projectileDamage
-        );
+        projectile.Initialize(direction, projectileSpeed, projectileDamage);
     }
 }

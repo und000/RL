@@ -4,28 +4,52 @@ using UnityEngine.UI;
 
 public class PlayerHealthUI : MonoBehaviour
 {
-    [SerializeField]
-    private PlayerHealth playerHealth;
+    [SerializeField] private PlayerHealth playerHealth;
+    [SerializeField] private Slider healthSlider;
+    [SerializeField] private TMP_Text healthText;
 
-    [SerializeField]
-    private Slider healthSlider;
+    [Header("í”¼í•´ ìž”ìƒ")]
+    [SerializeField] private Color damageTrailColor = Color.white;
+    [SerializeField, Min(0f)] private float damageTrailDelay = 0.35f;
+    [SerializeField, Min(0.01f)] private float damageTrailDuration = 0.6f;
 
-    [SerializeField]
-    private TMP_Text healthText;
+    private RectTransform damageTrailTransform;
+    private float displayedTrailHealth;
+    private float trailMoveStartTime;
 
     private void Start()
     {
-        if (playerHealth == null ||
-            healthSlider == null ||
-            healthText == null)
+        if (playerHealth == null || healthSlider == null || healthText == null)
         {
-            Debug.LogError("Player Health UI¿¡ ÇÊ¿äÇÑ ¿ÀºêÁ§Æ®°¡ ¿¬°áµÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+            Debug.LogError("Player Health UIì— í•„ìš”í•œ ì˜¤ë¸Œì íŠ¸ê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
             enabled = false;
             return;
         }
 
+        CreateDamageTrail();
+        displayedTrailHealth = playerHealth.GetCurrentHealth();
         playerHealth.OnHealthChanged += UpdateHealthUI;
         UpdateHealthUI();
+    }
+
+    private void Update()
+    {
+        if (damageTrailTransform == null || playerHealth == null)
+        {
+            return;
+        }
+
+        float currentHealth = playerHealth.GetCurrentHealth();
+        if (Time.time >= trailMoveStartTime && displayedTrailHealth > currentHealth)
+        {
+            float speed = playerHealth.GetMaxHealth() / damageTrailDuration;
+            displayedTrailHealth = Mathf.MoveTowards(
+                displayedTrailHealth,
+                currentHealth,
+                speed * Time.deltaTime
+            );
+            UpdateDamageTrail();
+        }
     }
 
     private void UpdateHealthUI()
@@ -33,10 +57,56 @@ public class PlayerHealthUI : MonoBehaviour
         int currentHealth = playerHealth.GetCurrentHealth();
         int maxHealth = playerHealth.GetMaxHealth();
 
+        if (currentHealth < displayedTrailHealth)
+        {
+            trailMoveStartTime = Time.time + damageTrailDelay;
+        }
+        else if (currentHealth > displayedTrailHealth)
+        {
+            displayedTrailHealth = currentHealth;
+        }
+
         healthSlider.maxValue = maxHealth;
         healthSlider.value = currentHealth;
-
         healthText.text = $"{currentHealth} / {maxHealth}";
+        UpdateDamageTrail();
+    }
+
+    public float GetRecoverableTrailHealth()
+    {
+        return Mathf.Max(0f, displayedTrailHealth - playerHealth.GetCurrentHealth());
+    }
+
+    private void CreateDamageTrail()
+    {
+        RectTransform normalFill = healthSlider.fillRect;
+        GameObject trailObject = new GameObject(
+            "DamageTrail",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        );
+
+        damageTrailTransform = trailObject.GetComponent<RectTransform>();
+        damageTrailTransform.SetParent(normalFill.parent, false);
+        damageTrailTransform.SetSiblingIndex(normalFill.GetSiblingIndex());
+        damageTrailTransform.anchorMin = Vector2.zero;
+        damageTrailTransform.anchorMax = Vector2.one;
+        damageTrailTransform.offsetMin = Vector2.zero;
+        damageTrailTransform.offsetMax = Vector2.zero;
+
+        Image trailImage = trailObject.GetComponent<Image>();
+        trailImage.color = damageTrailColor;
+        trailImage.raycastTarget = false;
+    }
+
+    private void UpdateDamageTrail()
+    {
+        float maxHealth = playerHealth.GetMaxHealth();
+        float ratio = maxHealth > 0f
+            ? Mathf.Clamp01(displayedTrailHealth / maxHealth)
+            : 0f;
+        damageTrailTransform.anchorMax = new Vector2(ratio, 1f);
     }
 
     private void OnDestroy()

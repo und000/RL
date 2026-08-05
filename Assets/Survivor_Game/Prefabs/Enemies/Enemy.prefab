@@ -15,7 +15,10 @@ GameObject:
   - component: {fileID: 1994312611251823439}
   - component: {fileID: 3755170266350585659}
   - component: {fileID: 9147379770449403647}
-  m_Layer: 0
+  - component: {fileID: 8401838474382089401}
+  - component: {fileID: 7408927385107219442}
+  - component: {fileID: 2962347032998345271}
+  m_Layer: 6
   m_Name: Enemy
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -182,6 +185,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   moveSpeed: 2
+  separationRadius: 1.2
+  separationStrength: 1.5
+  movementDeadZone: 0.08
 --- !u!114 &3755170266350585659
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -210,3 +216,57 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyContactDamage
   contactDamage: 1
   damageInterval: 1
+--- !u!114 &8401838474382089401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911391679415815211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd5aa7eb32744b5f93f5e37207287557, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHitEffect
+  flashColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 0.08
+  shakeStrength: 0.12
+  shakeDuration: 0.12
+  shakeInterval: 0.015
+  effectCooldown: 0.05
+--- !u!114 &7408927385107219442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911391679415815211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5e25df0e760491798b587ba3c833865, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyKnockback
+  knockbackResistance: 0
+  postKnockbackStopDuration: 0.2
+--- !u!114 &2962347032998345271
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911391679415815211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34fe23f02e7c4b59bb9426e50e8dd76b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHealthBar
+  visibleDuration: 2
+  barOffset: {x: 0, y: 1.2}
+  barWidth: 1.4
+  barHeight: 0.16
+  backgroundColor: {r: 0.08, g: 0.08, b: 0.08, a: 0.9}
+  fillColor: {r: 0.9, g: 0.12, b: 0.12, a: 1}
+  sortingOrder: 20
+  damageTrailColor: {r: 1, g: 1, b: 1, a: 1}
+  damageTrailDelay: 0.25
+  damageTrailDuration: 0.45

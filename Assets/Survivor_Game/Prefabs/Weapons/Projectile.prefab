@@ -171,3 +171,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
   lifeTime: 3
   speedMultiplier: 1
+  knockbackStrength: 3
+  knockbackDuration: 0.15
+  knockbackDirectionMode: 0
+  customKnockbackDirection: {x: 0, y: 1}

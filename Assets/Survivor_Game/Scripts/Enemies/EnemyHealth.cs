@@ -1,17 +1,15 @@
+using System;
 using UnityEngine;
 
 public class EnemyHealth : MonoBehaviour
 {
-    [SerializeField]
-    [Min(1)]
-    private int maxHealth = 3;
-
-    [SerializeField]
-    private GameObject experienceGemPrefab;
-    [SerializeField]
-    private int myExperience = 1;
+    [SerializeField, Min(1)] private int maxHealth = 3;
+    [SerializeField] private GameObject experienceGemPrefab;
+    [SerializeField, Min(1)] private int myExperience = 1;
 
     private int currentHealth;
+
+    public event Action<int, int> OnHealthChanged;
 
     private void Awake()
     {
@@ -20,34 +18,49 @@ public class EnemyHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (damage <= 0)
+        if (damage <= 0 || currentHealth <= 0)
         {
             return;
         }
 
-        currentHealth -= damage;
-
-        Debug.Log($"{name} ���� ü��: {currentHealth}");
-
-        if (currentHealth <= 0)
+        currentHealth = Mathf.Max(currentHealth - damage, 0);
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        if (currentHealth == 0)
         {
             Die();
         }
+    }
+
+    public int GetCurrentHealth()
+    {
+        return currentHealth;
+    }
+
+    public int GetMaxHealth()
+    {
+        return maxHealth;
     }
 
     private void Die()
     {
         if (experienceGemPrefab != null)
         {
-            GameObject gemObject = Instantiate(experienceGemPrefab, transform.position, Quaternion.identity);
+            GameObject gemObject = Instantiate(
+                experienceGemPrefab,
+                transform.position,
+                Quaternion.identity
+            );
 
-            ExperienceGem gem = gemObject.GetComponent<ExperienceGem>();
-
-            if (gem != null)
+            if (gemObject.TryGetComponent(out ExperienceGem gem))
             {
                 gem.Initialize(myExperience);
             }
         }
+        else
+        {
+            Debug.LogWarning($"{name}의 Experience Gem Prefab이 연결되지 않았습니다.");
+        }
+
         Destroy(gameObject);
     }
 }

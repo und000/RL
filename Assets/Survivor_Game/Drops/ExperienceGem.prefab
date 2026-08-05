@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3205124294474519178}
   - component: {fileID: 7659626546777448877}
   - component: {fileID: 8308971182611516709}
+  - component: {fileID: 4487912921593779220}
   m_Layer: 0
   m_Name: ExperienceGem
   m_TagString: Untagged
@@ -151,4 +152,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d34bd07d98be19d4bbfef504b76a7a21, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExperienceGem
-  experienceAmount: 1
+--- !u!114 &4487912921593779220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2295939921779772334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c53b7a1b97749ab91c156776a105a6c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ExperienceGemAttraction
+  startingSpeed: 4
+  acceleration: 18
+  maximumSpeed: 18
+  targetScaleMultiplier: 0.5
+  scaleShrinkSpeed: 1
+  rotationSpeed: 360
