@@ -245,6 +245,7 @@ GameObject:
   - component: {fileID: 402671754}
   - component: {fileID: 402671755}
   - component: {fileID: 402671756}
+  - component: {fileID: 402671757}
   m_Layer: 5
   m_Name: GameUI
   m_TagString: Untagged
@@ -382,6 +383,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpUI
   playerLevel: {fileID: 859371146}
+  slowDownDuration: 0.5
+  minimumTimeScale: 0
+--- !u!114 &402671757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402671749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22211111111111111111111111111111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHealthBarManager
+  normalHealthBarPrefab: {fileID: 8300000000000000004, guid: 31111111111111111111111111111111, type: 3}
+  eliteHealthBarPrefab: {fileID: 8300000000000000004, guid: 31222222222222222222222222222222, type: 3}
+  bossHealthBarPrefab: {fileID: 8300000000000000004, guid: 31333333333333333333333333333333, type: 3}
 --- !u!1 &497158698
 GameObject:
   m_ObjectHideFlags: 0
@@ -775,6 +793,7 @@ GameObject:
   - component: {fileID: 859371146}
   - component: {fileID: 859371147}
   - component: {fileID: 859371148}
+  - component: {fileID: 859371149}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -999,7 +1018,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c64de8d35c1d4389b9d70ea45da4dc9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPickupRange
   pickupRange: 2.5
 --- !u!114 &859371148
@@ -1012,7 +1031,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e6666666666666666666666666666666, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatStats
   characterBaseAttack: 20
   weaponAttack: 0
@@ -1024,6 +1043,27 @@ MonoBehaviour:
   flatArmorPenetration: 0
   trueDamageRate: 0
   minimumNormalDamage: 10
+--- !u!114 &859371149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 859371138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7777777777777777777777777777777, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerLevelShockwave
+  shockwaveRadius: 7
+  expansionDuration: 0.45
+  damage: 5
+  baseAttackKnockbackStrength: 3
+  knockbackStrengthMultiplier: 4
+  knockbackDuration: 0.35
+  shockwaveColor: {r: 0.5, g: 0.9, b: 1, a: 0.9}
+  lineWidth: 0.15
+  circleSegments: 30
 --- !u!1 &982218653
 GameObject:
   m_ObjectHideFlags: 0

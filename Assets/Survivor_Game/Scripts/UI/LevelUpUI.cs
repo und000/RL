@@ -1,11 +1,18 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class LevelUpUI : MonoBehaviour
 {
+    public static bool IsPopupOpen { get; private set; }
+
     [SerializeField]
     private PlayerLevel playerLevel;
+
+    [Header("레벨업 시간 연출")]
+    [SerializeField, Min(0f)] private float slowDownDuration = 0.5f;
+    [SerializeField, Range(0f, 1f)] private float minimumTimeScale;
 
     private GameObject levelUpPanel;
     private TMP_Text titleText;
@@ -14,6 +21,7 @@ public class LevelUpUI : MonoBehaviour
 
     private void Awake()
     {
+        IsPopupOpen = false;
         CreateLevelUpPanel();
         levelUpPanel.SetActive(false);
     }
@@ -41,7 +49,7 @@ public class LevelUpUI : MonoBehaviour
         }
 
         previousLevel = currentLevel;
-        ShowLevelUpPanel(currentLevel);
+        BeginLevelUpSequence(currentLevel);
     }
 
     private void OnDestroy()
@@ -51,30 +59,53 @@ public class LevelUpUI : MonoBehaviour
             playerLevel.OnProgressChanged -= HandleProgressChanged;
         }
 
-        if (levelUpPanel != null && levelUpPanel.activeSelf)
+        if (IsPopupOpen)
         {
             Time.timeScale = timeScaleBeforePause;
         }
+
+        IsPopupOpen = false;
     }
 
-    private void ShowLevelUpPanel(int currentLevel)
+    private void BeginLevelUpSequence(int currentLevel)
     {
-        if (levelUpPanel.activeSelf)
+        if (IsPopupOpen)
         {
             return;
         }
 
+        IsPopupOpen = true;
         titleText.text = $"LEVEL UP!  Lv. {currentLevel}";
-        levelUpPanel.SetActive(true);
-
         timeScaleBeforePause = Time.timeScale;
-        Time.timeScale = 0f;
+        StartCoroutine(SlowDownAndShowPopup());
+    }
+
+    private IEnumerator SlowDownAndShowPopup()
+    {
+        float startTimeScale = timeScaleBeforePause;
+        float targetTimeScale = Mathf.Clamp(minimumTimeScale, 0f, startTimeScale);
+
+        if (slowDownDuration > 0f)
+        {
+            float elapsedTime = 0f;
+            while (elapsedTime < slowDownDuration)
+            {
+                elapsedTime += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsedTime / slowDownDuration);
+                Time.timeScale = Mathf.Lerp(startTimeScale, targetTimeScale, progress);
+                yield return null;
+            }
+        }
+
+        Time.timeScale = targetTimeScale;
+        levelUpPanel.SetActive(true);
     }
 
     private void ContinueGame()
     {
         levelUpPanel.SetActive(false);
         Time.timeScale = timeScaleBeforePause;
+        IsPopupOpen = false;
     }
 
     private void CreateLevelUpPanel()

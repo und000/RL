@@ -11,6 +11,7 @@ public class EnemyHealth : MonoBehaviour
     private int currentHealth;
 
     public event Action<int, int> OnHealthChanged;
+    public event Action OnDied;
 
     private void Awake()
     {
@@ -61,6 +62,8 @@ public class EnemyHealth : MonoBehaviour
 
     private void Die()
     {
+        OnDied?.Invoke();
+
         if (experienceGemPrefab != null)
         {
             GameObject gemObject = Instantiate(
