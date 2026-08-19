@@ -107,6 +107,24 @@ public static class EnemyContentValidator
                 ReportWarning(prefab,
                     "EnemyPatternController has no EnemyAttackPattern components.", ref warnings);
             }
+
+            foreach (EnemyProjectileAttackPattern attack in
+                prefab.GetComponents<EnemyProjectileAttackPattern>())
+            {
+                if (attack.ProjectilePrefab == null ||
+                    attack.ProjectilePrefab.GetComponent<EnemyProjectile>() == null)
+                {
+                    ReportError(prefab,
+                        "Projectile attack pattern requires an EnemyProjectile prefab.",
+                        ref errors);
+                }
+                if (attack.RequiresAttackGate && !HasAttackGate(prefab))
+                {
+                    ReportError(prefab,
+                        "Projectile attack requires a gate but no IEnemyAttackGate exists.",
+                        ref errors);
+                }
+            }
         }
     }
 
@@ -132,6 +150,24 @@ public static class EnemyContentValidator
             {
                 ReportWarning(prefab,
                     "Recommended hierarchy is Root / Render / Sprite.", ref warnings);
+            }
+
+            foreach (EnemyProjectileSpawnOnFinish spawnModule in
+                prefab.GetComponents<EnemyProjectileSpawnOnFinish>())
+            {
+                GameObject child = spawnModule.ChildProjectilePrefab;
+                if (child == null || child.GetComponent<EnemyProjectile>() == null)
+                {
+                    ReportError(prefab,
+                        "Spawn On Finish requires an EnemyProjectile child prefab.",
+                        ref errors);
+                }
+                else if (child == prefab)
+                {
+                    ReportWarning(prefab,
+                        "Spawn On Finish references itself and can create an endless chain.",
+                        ref warnings);
+                }
             }
         }
     }
@@ -173,6 +209,15 @@ public static class EnemyContentValidator
                 AssetDatabase.GUIDToAssetPath(guid));
             if (prefab != null) yield return prefab;
         }
+    }
+
+    private static bool HasAttackGate(GameObject prefab)
+    {
+        foreach (MonoBehaviour behaviour in prefab.GetComponents<MonoBehaviour>())
+        {
+            if (behaviour is IEnemyAttackGate) return true;
+        }
+        return false;
     }
 
     private static void ReportError(Object context, string message, ref int count)

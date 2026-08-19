@@ -1,6 +1,11 @@
 using System.Collections;
 using UnityEngine;
 
+public interface IEnemyAttackGate
+{
+    bool CanUseEnemyAttacks { get; }
+}
+
 public abstract class EnemyAttackPattern : MonoBehaviour
 {
     [Header("패턴 선택 조건")]

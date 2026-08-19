@@ -6,6 +6,8 @@ public class CameraFollow : MonoBehaviour
 {
     [SerializeField] private Transform target;
     [SerializeField, Min(0.01f)] private float followSmoothTime = 0.12f;
+    [Tooltip("일반 추적 반응 속도 비율입니다. 0.9는 기존보다 10% 느리게 따라갑니다.")]
+    [SerializeField, Range(0.1f, 1f)] private float normalFollowSpeedRatio = 0.9f;
     [SerializeField, Min(0.01f)] private float pointerFocusSmoothTime = 0.06f;
     [SerializeField, Min(0f)] private float pointerSnapDistance = 0.15f;
 
@@ -38,9 +40,12 @@ public class CameraFollow : MonoBehaviour
         }
 
         float smoothTime = usePointerFocus ? pointerFocusSmoothTime : followSmoothTime;
+        float followDeltaTime = usePointerFocus
+            ? Time.unscaledDeltaTime
+            : Time.unscaledDeltaTime * normalFollowSpeedRatio;
         transform.position = Vector3.SmoothDamp(
             transform.position, destination, ref velocity, smoothTime,
-            Mathf.Infinity, Time.unscaledDeltaTime);
+            Mathf.Infinity, followDeltaTime);
 
         if (usePointerFocus &&
             Vector2.Distance(transform.position, destination) <= pointerSnapDistance)
@@ -65,5 +70,13 @@ public class CameraFollow : MonoBehaviour
         {
             pointerFocusSnapped = false;
         }
+    }
+
+    private void OnValidate()
+    {
+        followSmoothTime = Mathf.Max(0.01f, followSmoothTime);
+        normalFollowSpeedRatio = Mathf.Clamp(normalFollowSpeedRatio, 0.1f, 1f);
+        pointerFocusSmoothTime = Mathf.Max(0.01f, pointerFocusSmoothTime);
+        pointerSnapDistance = Mathf.Max(0f, pointerSnapDistance);
     }
 }

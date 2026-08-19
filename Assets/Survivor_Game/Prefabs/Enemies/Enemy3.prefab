@@ -22,6 +22,8 @@ GameObject:
   - component: {fileID: 7730000000000000002}
   - component: {fileID: 7730000000000000003}
   - component: {fileID: 7790000000000000003}
+  - component: {fileID: 7830000000000000001}
+  - component: {fileID: 7830000000000000002}
   m_Layer: 6
   m_Name: Enemy3
   m_TagString: Enemy
@@ -250,13 +252,55 @@ MonoBehaviour:
   chaseDuration: 2
   chaseSpeed: 2
   detectionRange: 6
-  projectilePrefab: {fileID: 8300000000000000001, guid: 43d0cdba31884bbb828f928c42a4e52e, type: 3}
-  fireInterval: 0.8
-  projectileSpeed: 6
-  projectileDamage: 10
-  projectileLifetime: 5
   randomMoveDuration: 2
   randomMoveSpeed: 2.5
+--- !u!114 &7830000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911391679415815211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67519f1b6c8344029267459c489e5a1d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatternController
+  decisionInterval: 0.15
+--- !u!114 &7830000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911391679415815211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec7942b43aca4b0799d11c4a11c60e72, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyProjectileAttackPattern
+  selectionWeight: 1
+  minimumRange: 0
+  maximumRange: 6
+  availablePhases: []
+  stopMovementWhileExecuting: 0
+  attackInterval: 0.8
+  firstAttackDelay: 0
+  projectilePrefab: {fileID: 8300000000000000001, guid: 43d0cdba31884bbb828f928c42a4e52e, type: 3}
+  projectileSpeed: 6
+  projectileDamage: 10
+  projectileLifeTime: 5
+  alignProjectileToDirection: 0
+  aimMode: 0
+  fixedWorldDirection: {x: 0, y: -1}
+  windupDuration: 0
+  shotCount: 1
+  shotInterval: 0
+  recoveryDuration: 0
+  projectilesPerShot: 1
+  spreadAngle: 0
+  angleOffset: 0
+  requireAttackGate: 1
 --- !u!114 &3755170266350585659
 MonoBehaviour:
   m_ObjectHideFlags: 0

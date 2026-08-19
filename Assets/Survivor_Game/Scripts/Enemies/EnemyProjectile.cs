@@ -39,13 +39,18 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
         Vector2 direction,
         float speed,
         int damage,
-        float lifetime)
+        float lifetime,
+        bool alignToDirection = false)
     {
         GameObject instance = PrefabPool.Spawn(prefab, position, Quaternion.identity);
         if (instance == null || !instance.TryGetComponent(out EnemyProjectile projectile))
         {
             if (instance != null) PrefabPool.Release(instance);
             return null;
+        }
+        if (alignToDirection && direction.sqrMagnitude > 0.0001f)
+        {
+            projectile.transform.right = direction.normalized;
         }
         projectile.Initialize(direction, speed, damage, lifetime);
         return projectile;
