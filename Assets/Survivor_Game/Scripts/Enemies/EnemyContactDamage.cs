@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class EnemyContactDamage : MonoBehaviour
+public class EnemyContactDamage : MonoBehaviour, IEnemyPoolLifecycle
 {
     [SerializeField]
     [Min(1)]
@@ -28,5 +28,15 @@ public class EnemyContactDamage : MonoBehaviour
         playerHealth.TakeDamage(contactDamage);
 
         nextDamageTime = Time.time + damageInterval;
+    }
+
+    public void OnEnemySpawned()
+    {
+        nextDamageTime = 0f;
+    }
+
+    public void OnEnemyDespawned()
+    {
+        nextDamageTime = 0f;
     }
 }

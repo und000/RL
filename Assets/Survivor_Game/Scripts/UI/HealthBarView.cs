@@ -14,6 +14,7 @@ public class HealthBarView : MonoBehaviour
     [SerializeField] private RectTransform damageTrailTransform;
     [SerializeField, Min(0f)] private float damageTrailDelay = 0.25f;
     [SerializeField, Min(0.01f)] private float damageTrailDuration = 0.45f;
+    [SerializeField, Min(0f)] private float deathDisplayDuration = 0.35f;
 
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
@@ -28,6 +29,9 @@ public class HealthBarView : MonoBehaviour
     private float displayedTrailHealth;
     private int currentHealth;
     private int maxHealth;
+    private Vector3 trackedWorldPosition;
+    private float deathReleaseTime;
+    private bool targetDied;
     private bool releasing;
 
     private void Awake()
@@ -52,6 +56,7 @@ public class HealthBarView : MonoBehaviour
         visibleDuration = newVisibleDuration;
         manager = owner;
         worldCamera = camera;
+        targetDied = false;
         releasing = false;
 
         currentHealth = targetHealth.GetCurrentHealth();
@@ -59,7 +64,10 @@ public class HealthBarView : MonoBehaviour
         displayedTrailHealth = currentHealth;
         trailMoveStartTime = 0f;
         visibleUntil = 0f;
+        deathReleaseTime = 0f;
+        CacheTrackedWorldPosition();
 
+        targetHealth.OnDamaged += HandleDamaged;
         targetHealth.OnHealthChanged += HandleHealthChanged;
         targetHealth.OnDied += HandleTargetDied;
 
@@ -69,10 +77,22 @@ public class HealthBarView : MonoBehaviour
 
     private void Update()
     {
-        if (targetHealth == null)
+        if (targetDied)
+        {
+            if (Time.unscaledTime >= deathReleaseTime)
+            {
+                RequestRelease();
+                return;
+            }
+        }
+        else if (targetHealth == null || !targetHealth.gameObject.activeInHierarchy)
         {
             RequestRelease();
             return;
+        }
+        else
+        {
+            CacheTrackedWorldPosition();
         }
 
         if (Time.unscaledTime >= trailMoveStartTime &&
@@ -94,8 +114,22 @@ public class HealthBarView : MonoBehaviour
         UpdateVisibility();
     }
 
+    private void HandleDamaged()
+    {
+        CacheTrackedWorldPosition();
+        visibleUntil = Mathf.Max(
+            visibleUntil,
+            Time.unscaledTime + Mathf.Max(
+                visibleDuration,
+                damageTrailDelay + damageTrailDuration
+            )
+        );
+        UpdateVisibility();
+    }
+
     private void HandleHealthChanged(int newCurrentHealth, int newMaxHealth)
     {
+        CacheTrackedWorldPosition();
         int previousHealth = currentHealth;
         currentHealth = newCurrentHealth;
         maxHealth = newMaxHealth;
@@ -130,9 +164,7 @@ public class HealthBarView : MonoBehaviour
             return;
         }
 
-        rectTransform.position = worldCamera.WorldToScreenPoint(
-            targetHealth.transform.position + worldOffset
-        );
+        rectTransform.position = worldCamera.WorldToScreenPoint(trackedWorldPosition);
     }
 
     private void UpdateVisibility()
@@ -142,9 +174,7 @@ public class HealthBarView : MonoBehaviour
 
         if (shouldShow && healthBarType != HealthBarType.Boss && worldCamera != null)
         {
-            Vector3 viewportPosition = worldCamera.WorldToViewportPoint(
-                targetHealth.transform.position + worldOffset
-            );
+            Vector3 viewportPosition = worldCamera.WorldToViewportPoint(trackedWorldPosition);
             shouldShow = viewportPosition.z > 0f &&
                 viewportPosition.x >= 0f && viewportPosition.x <= 1f &&
                 viewportPosition.y >= 0f && viewportPosition.y <= 1f;
@@ -168,7 +198,49 @@ public class HealthBarView : MonoBehaviour
 
     private void HandleTargetDied()
     {
-        RequestRelease();
+        CacheTrackedWorldPosition();
+        targetDied = true;
+        deathReleaseTime = Time.unscaledTime + deathDisplayDuration;
+        visibleUntil = Mathf.Max(visibleUntil, deathReleaseTime);
+        UnsubscribeFromTarget();
+        UpdateBarFill();
+        UpdateVisibility();
+
+        if (deathDisplayDuration <= 0f)
+        {
+            RequestRelease();
+        }
+    }
+
+    private void CacheTrackedWorldPosition()
+    {
+        if (targetHealth != null)
+        {
+            trackedWorldPosition = targetHealth.transform.position + worldOffset;
+        }
+    }
+
+    private void UnsubscribeFromTarget()
+    {
+        if (targetHealth == null)
+        {
+            return;
+        }
+
+        targetHealth.OnDamaged -= HandleDamaged;
+        targetHealth.OnHealthChanged -= HandleHealthChanged;
+        targetHealth.OnDied -= HandleTargetDied;
+    }
+
+    public bool IsTracking(EnemyHealth health)
+    {
+        return !releasing && targetHealth == health;
+    }
+
+    public bool IsHoldingDeathDisplayFor(EnemyHealth health)
+    {
+        return IsTracking(health) && targetDied &&
+            Time.unscaledTime < deathReleaseTime;
     }
 
     private void RequestRelease()
@@ -184,14 +256,11 @@ public class HealthBarView : MonoBehaviour
 
     public void ResetView()
     {
-        if (targetHealth != null)
-        {
-            targetHealth.OnHealthChanged -= HandleHealthChanged;
-            targetHealth.OnDied -= HandleTargetDied;
-        }
+        UnsubscribeFromTarget();
 
         targetHealth = null;
         manager = null;
+        targetDied = false;
         canvasGroup.alpha = 0f;
     }
 }

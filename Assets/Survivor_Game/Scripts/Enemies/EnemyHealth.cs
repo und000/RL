@@ -1,21 +1,33 @@
 using System;
 using UnityEngine;
 
-public class EnemyHealth : MonoBehaviour
+public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 {
+    [Header("Enemy Data")]
+    [SerializeField] private EnemyProfile profile;
+    [Header("Legacy Fallback (used when Profile is empty)")]
     [SerializeField, Min(1)] private int maxHealth = 3;
     [SerializeField, Min(0)] private int defense;
     [SerializeField] private GameObject experienceGemPrefab;
     [SerializeField, Min(1)] private int myExperience = 1;
 
     private int currentHealth;
+    private bool dying;
+
+    public EnemyProfile Profile => profile;
 
     public event Action<int, int> OnHealthChanged;
+    public event Action OnDamaged;
     public event Action OnDied;
 
     private void Awake()
     {
-        currentHealth = maxHealth;
+        ResetHealth();
+    }
+
+    private void OnEnable()
+    {
+        ResetHealth();
     }
 
     public void TakeDamage(DamageData damageData)
@@ -27,7 +39,7 @@ public class EnemyHealth : MonoBehaviour
 
         float remainingDefense = Mathf.Max(
             0f,
-            defense - damageData.FlatArmorPenetration
+            GetDefense() - damageData.FlatArmorPenetration
         );
         float effectiveDefense = remainingDefense *
             (1f - damageData.ArmorPenetrationRate);
@@ -38,7 +50,11 @@ public class EnemyHealth : MonoBehaviour
         int trueDamage = Mathf.Max(0, Mathf.RoundToInt(damageData.TrueDamage));
         int finalDamage = normalDamage + trueDamage;
         currentHealth = Mathf.Max(currentHealth - finalDamage, 0);
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        if (finalDamage > 0)
+        {
+            OnDamaged?.Invoke();
+        }
+        OnHealthChanged?.Invoke(currentHealth, GetMaxHealth());
         if (currentHealth == 0)
         {
             Die();
@@ -52,29 +68,54 @@ public class EnemyHealth : MonoBehaviour
 
     public int GetMaxHealth()
     {
-        return maxHealth;
+        return profile != null ? profile.MaxHealth : maxHealth;
     }
 
     public int GetDefense()
     {
-        return defense;
+        return profile != null ? profile.Defense : defense;
+    }
+
+    public void RegisterZeroDamageHit()
+    {
+        if (currentHealth > 0)
+        {
+            OnDamaged?.Invoke();
+        }
     }
 
     private void Die()
     {
+        if (dying) return;
+        dying = true;
         OnDied?.Invoke();
 
-        if (experienceGemPrefab != null)
+        if (TryGetComponent(out EnemyLifecycleVisual lifecycleVisual) &&
+            lifecycleVisual.TryPlayDeath(CompleteDeath))
+        {
+            return;
+        }
+
+        CompleteDeath();
+    }
+
+    private void CompleteDeath()
+    {
+
+        GameObject gemPrefab = profile != null
+            ? profile.ExperienceGemPrefab : experienceGemPrefab;
+        int experience = profile != null ? profile.Experience : myExperience;
+        if (gemPrefab != null)
         {
             GameObject gemObject = Instantiate(
-                experienceGemPrefab,
+                gemPrefab,
                 transform.position,
                 Quaternion.identity
             );
 
             if (gemObject.TryGetComponent(out ExperienceGem gem))
             {
-                gem.Initialize(myExperience);
+                gem.Initialize(experience);
             }
         }
         else
@@ -82,6 +123,29 @@ public class EnemyHealth : MonoBehaviour
             Debug.LogWarning($"{name}의 Experience Gem Prefab이 연결되지 않았습니다.");
         }
 
-        Destroy(gameObject);
+        if (TryGetComponent(out PooledEnemy pooledEnemy) && pooledEnemy.IsConfigured)
+        {
+            pooledEnemy.ReturnToPool();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    public void OnEnemySpawned()
+    {
+        ResetHealth();
+    }
+
+    public void OnEnemyDespawned()
+    {
+        dying = false;
+    }
+
+    private void ResetHealth()
+    {
+        currentHealth = GetMaxHealth();
+        dying = false;
     }
 }

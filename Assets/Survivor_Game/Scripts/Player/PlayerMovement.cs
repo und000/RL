@@ -10,7 +10,12 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody2D body;
     private Vector2 moveInput;
+    private Vector2 lastMoveDirection = Vector2.down;
     private bool isSprinting;
+    private bool movementLocked;
+
+    public Vector2 MoveInput => moveInput;
+    public Vector2 LastMoveDirection => lastMoveDirection;
 
     private void Awake()
     {
@@ -54,17 +59,38 @@ public class PlayerMovement : MonoBehaviour
             new Vector2(horizontal, vertical),
             1f
         );
+
+        if (moveInput.sqrMagnitude > 0f)
+        {
+            lastMoveDirection = moveInput.normalized;
+        }
+
         isSprinting = keyboard.shiftKey.isPressed;
     }
 
     private void FixedUpdate()
     {
+        if (movementLocked)
+        {
+            return;
+        }
+
         float currentSpeed = isSprinting ? runSpeed : walkSpeed;
         body.linearVelocity = moveInput * currentSpeed;
     }
 
+    public void SetMovementLocked(bool locked)
+    {
+        movementLocked = locked;
+        if (locked && body != null)
+        {
+            body.linearVelocity = Vector2.zero;
+        }
+    }
+
     private void OnDisable()
     {
+        movementLocked = false;
         if (body != null)
         {
             body.linearVelocity = Vector2.zero;

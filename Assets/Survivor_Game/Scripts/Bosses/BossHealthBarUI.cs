@@ -11,11 +11,12 @@ public class BossHealthBarUI : MonoBehaviour
             return;
         }
 
+        EnemyHealth health = GetComponent<EnemyHealth>();
+        EnemyProfile profile = health.Profile;
         EnemyHealthBarManager.Instance.Register(
-            GetComponent<EnemyHealth>(),
-            HealthBarType.Boss,
-            Vector3.zero,
-            0f
-        );
+            health,
+            profile != null ? profile.HealthBarType : HealthBarType.Boss,
+            profile != null ? profile.HealthBarOffset : Vector3.zero,
+            profile != null ? profile.HealthBarVisibleDuration : 0f);
     }
 }

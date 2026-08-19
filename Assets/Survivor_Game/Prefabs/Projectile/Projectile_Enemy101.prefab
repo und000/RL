@@ -107,9 +107,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 8200000000000000001}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2222222222222222222222222222222, type: 3}
+  m_Script: {fileID: 11500000, guid: 4c2a3b7da0ca49f6bb570a74417f20d6, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::BossProjectile
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyProjectile
+  impactPrefab: {fileID: 9100000000000000003, guid: 12b606e6e9c149c592b756ef62d9f81a, type: 3}
 --- !u!1 &8200000000000000006
 GameObject:
   m_ObjectHideFlags: 0

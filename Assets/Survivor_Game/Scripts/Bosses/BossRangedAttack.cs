@@ -1,75 +1,79 @@
+using System.Collections;
 using UnityEngine;
 
-public class BossRangedAttack : MonoBehaviour
+public class BossRangedAttack : EnemyAttackPattern
 {
     [Header("발사 주기")]
     [SerializeField, Min(0.1f)] private float attackInterval = 2f;
     [SerializeField, Min(0f)] private float firstAttackDelay = 1f;
 
-    [Header("탄환")]
+    [Header("투사체")]
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField, Min(0.1f)] private float projectileSpeed = 5f;
     [SerializeField, Min(1)] private int projectileDamage = 1;
     [SerializeField, Min(0.1f)] private float projectileLifeTime = 6f;
 
-    private Transform target;
-    private float nextAttackTime;
+    [Header("공격 시퀀스")]
+    [SerializeField, Min(0f)] private float windupDuration;
+    [SerializeField, Min(1)] private int shotCount = 1;
+    [SerializeField, Min(0f)] private float shotInterval;
+    [SerializeField, Min(0f)] private float recoveryDuration;
 
-    private void Start()
+    protected override float Cooldown => attackInterval;
+    protected override float InitialDelay => firstAttackDelay;
+
+    protected override bool CanExecutePattern(Transform target)
     {
-        if (projectilePrefab == null)
-        {
-            Debug.LogError($"{name}에 투사체 프리팹이 연결되지 않았습니다.");
-            enabled = false;
-            return;
-        }
-
-        GameObject player = GameObject.FindWithTag("Player");
-        if (player != null)
-        {
-            target = player.transform;
-        }
-
-        nextAttackTime = Time.time + firstAttackDelay;
+        return projectilePrefab != null;
     }
 
-    private void Update()
+    protected override IEnumerator ExecutePattern(Transform target)
     {
-        if (target == null || Time.time < nextAttackTime)
+        if (windupDuration > 0f)
         {
-            return;
+            yield return new WaitForSeconds(windupDuration);
         }
 
-        Vector2 direction = (target.position - transform.position).normalized;
-        FireProjectile(direction);
-        nextAttackTime = Time.time + attackInterval;
+        int validShotCount = Mathf.Max(1, shotCount);
+        for (int shotIndex = 0; shotIndex < validShotCount; shotIndex++)
+        {
+            if (target == null)
+            {
+                yield break;
+            }
+
+            Vector2 direction = (target.position - transform.position).normalized;
+            FireProjectile(direction);
+
+            if (shotIndex < validShotCount - 1 && shotInterval > 0f)
+            {
+                yield return new WaitForSeconds(shotInterval);
+            }
+        }
+
+        if (recoveryDuration > 0f)
+        {
+            yield return new WaitForSeconds(recoveryDuration);
+        }
     }
 
     public void FireProjectile(Vector2 direction)
     {
-        if (direction == Vector2.zero)
+        if (direction == Vector2.zero || projectilePrefab == null)
         {
             return;
         }
 
-        GameObject projectileObject = Instantiate(
+        EnemyProjectile projectile = EnemyProjectile.Spawn(
             projectilePrefab,
             transform.position,
-            Quaternion.identity
-        );
-
-        if (!projectileObject.TryGetComponent(out BossProjectile projectile))
-        {
-            Debug.LogError($"{projectilePrefab.name}에 BossProjectile 스크립트가 없습니다.");
-            Destroy(projectileObject);
-            return;
-        }
-
-        projectile.Initialize(
             direction,
             projectileSpeed,
             projectileDamage,
-            projectileLifeTime
-        );
+            projectileLifeTime);
+        if (projectile == null)
+        {
+            Debug.LogError($"{projectilePrefab.name}에 EnemyProjectile 스크립트가 없습니다.");
+        }
     }
 }

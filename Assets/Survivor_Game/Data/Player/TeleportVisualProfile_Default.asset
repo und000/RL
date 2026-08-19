@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16c38bfe56f04dbe9db0fa3fac0ff4d2, type: 3}
+  m_Name: TeleportVisualProfile_Default
+  m_EditorClassIdentifier:
+  visuals:
+    aimLine: {fileID: 1001, guid: c4ec2942898c4cefa4c83f5405220605, type: 3}
+    targetRange: {fileID: 1001, guid: 8c91f2b1ca7045458fb1f63f038b714a, type: 3}
+    arrivalShockwave: {fileID: 1001, guid: d1daf978f3164931ae0f67f3c7678b56, type: 3}

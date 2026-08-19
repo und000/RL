@@ -26,6 +26,7 @@ public class PlayerHealthUI : MonoBehaviour
             return;
         }
 
+        DisplayOnlyUI.Configure(healthSlider);
         CreateDamageTrail();
         displayedTrailHealth = playerHealth.GetCurrentHealth();
         playerHealth.OnHealthChanged += UpdateHealthUI;

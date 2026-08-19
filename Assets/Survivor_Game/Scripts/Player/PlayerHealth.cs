@@ -18,12 +18,17 @@ public class PlayerHealth : MonoBehaviour
     private int currentHealth;
     private int baseMaxHealth;
     private bool isDead;
+    private bool isDodgeInvulnerable;
+    private bool isTeleportInvulnerable;
     private Rigidbody2D body;
     private PlayerMovement playerMovement;
     private AutoWeapon autoWeapon;
     private Collider2D playerCollider;
     private SpriteRenderer spriteRenderer;
     private PlayerLevel playerLevel;
+    private PlayerDodge playerDodge;
+    private PlayerTeleportSkill playerTeleportSkill;
+    private PlayerLowerbodyFacing lowerbodyFacing;
 
     public event Action OnHealthChanged;
 
@@ -37,6 +42,9 @@ public class PlayerHealth : MonoBehaviour
         playerCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         playerLevel = GetComponent<PlayerLevel>();
+        playerDodge = GetComponent<PlayerDodge>();
+        playerTeleportSkill = GetComponent<PlayerTeleportSkill>();
+        lowerbodyFacing = GetComponentInChildren<PlayerLowerbodyFacing>(true);
     }
 
     private void OnEnable()
@@ -60,18 +68,29 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (damage <= 0 || isDead)
+        if (damage <= 0 || isDead || isDodgeInvulnerable || isTeleportInvulnerable)
         {
             return;
         }
 
         currentHealth = Mathf.Max(currentHealth - damage, 0);
+        lowerbodyFacing?.PlayHit();
         OnHealthChanged?.Invoke();
 
         if (currentHealth == 0)
         {
             Die();
         }
+    }
+
+    public void SetDodgeInvulnerable(bool invulnerable)
+    {
+        isDodgeInvulnerable = invulnerable && !isDead;
+    }
+
+    public void SetTeleportInvulnerable(bool invulnerable)
+    {
+        isTeleportInvulnerable = invulnerable && !isDead;
     }
 
     private void Die()
@@ -86,6 +105,16 @@ public class PlayerHealth : MonoBehaviour
         if (playerMovement != null)
         {
             playerMovement.enabled = false;
+        }
+
+        if (playerDodge != null)
+        {
+            playerDodge.enabled = false;
+        }
+
+        if (playerTeleportSkill != null)
+        {
+            playerTeleportSkill.enabled = false;
         }
 
         if (autoWeapon != null)

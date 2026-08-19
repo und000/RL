@@ -19,6 +19,12 @@ GameObject:
   - component: {fileID: 8100000000000000010}
   - component: {fileID: 8100000000000000011}
   - component: {fileID: 8100000000000000012}
+  - component: {fileID: 8100000000000000013}
+  - component: {fileID: 8100000000000000014}
+  - component: {fileID: 8100000000000000015}
+  - component: {fileID: 8100000000000000016}
+  - component: {fileID: 8100000000000000017}
+  - component: {fileID: 8190000000000000001}
   m_Layer: 6
   m_Name: Enemy101
   m_TagString: Enemy
@@ -26,6 +32,65 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &8190000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c27d56b9505c47189aa9878b2822487a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyLifecycleVisual
+  spawnDuration: 0.45
+  spawnStartScale: 0.15
+  deathDuration: 0.5
+  deathEndScale: 1.5
+--- !u!114 &8100000000000000015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9f8c948941747f7bfed91e020282323, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAwareness
+  detectionRange: 14
+  disengageRange: 20
+  checkInterval: 0.15
+  damagedAlertDuration: 8
+--- !u!114 &8100000000000000016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5eaffae704294017a477dcc3e23dff4c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ScenePlacedEnemy
+  activationRange: 50
+  checkInterval: 0.5
+--- !u!114 &8100000000000000017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dd7c14820484bd384e2e6c87e31033d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyOffscreenMarkerTarget
+  markerType: 1
 --- !u!4 &8100000000000000002
 Transform:
   m_ObjectHideFlags: 0
@@ -201,6 +266,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9438a8ab2f158f409e2382b8c1b0141, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
+  profile: {fileID: 11400000, guid: a4e5e649346f487e986100eb6389a68f, type: 2}
   maxHealth: 600
   defense: 10
   experienceGemPrefab: {fileID: 2295939921779772334, guid: 92ca83c1e78e38c479e631929ac419ca, type: 3}
@@ -263,12 +329,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1111111111111111111111111111111, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BossRangedAttack
+  selectionWeight: 1
+  minimumRange: 0
+  maximumRange: 100
+  availablePhases: []
+  stopMovementWhileExecuting: 0
   attackInterval: 2
   firstAttackDelay: 1
   projectilePrefab: {fileID: 8200000000000000001, guid: 18888888888888888888888888888888, type: 3}
   projectileSpeed: 5
   projectileDamage: 10
   projectileLifeTime: 6
+  windupDuration: 0
+  shotCount: 1
+  shotInterval: 0
+  recoveryDuration: 0
 --- !u!114 &8100000000000000012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -281,3 +356,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3333333333333333333333333333333, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BossHealthBarUI
+--- !u!114 &8100000000000000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67519f1b6c8344029267459c489e5a1d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatternController
+  decisionInterval: 0.15
+--- !u!114 &8100000000000000014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8100000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f736b12ba7401d9304d052d22250e7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPhaseController
+  nextPhaseHealthRatios:
+  - 0.7
+  - 0.4

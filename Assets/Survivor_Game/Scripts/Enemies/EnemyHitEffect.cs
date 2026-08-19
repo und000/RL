@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(SpriteRenderer))]
-public class EnemyHitEffect : MonoBehaviour
+public class EnemyHitEffect : MonoBehaviour, IEnemyPoolLifecycle
 {
     [Header("반짝임")]
     [SerializeField]
@@ -117,7 +117,29 @@ public class EnemyHitEffect : MonoBehaviour
 
     private void ResetVisual()
     {
+        if (visualRenderer == null || visualTransform == null) return;
         visualRenderer.color = originalColor;
         visualTransform.localPosition = Vector3.zero;
+    }
+
+    public void OnEnemySpawned()
+    {
+        ResetEffect();
+    }
+
+    public void OnEnemyDespawned()
+    {
+        ResetEffect();
+    }
+
+    private void ResetEffect()
+    {
+        if (effectRoutine != null)
+        {
+            StopCoroutine(effectRoutine);
+            effectRoutine = null;
+        }
+        nextEffectTime = 0f;
+        ResetVisual();
     }
 }

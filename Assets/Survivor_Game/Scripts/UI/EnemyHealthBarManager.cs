@@ -34,7 +34,7 @@ public class EnemyHealthBarManager : MonoBehaviour
         CreateContainer(HealthBarType.Boss, "BossHealthBars");
     }
 
-    public void Register(
+    public HealthBarView Register(
         EnemyHealth target,
         HealthBarType type,
         Vector3 worldOffset,
@@ -43,7 +43,7 @@ public class EnemyHealthBarManager : MonoBehaviour
         HealthBarView view = Acquire(type);
         if (view == null)
         {
-            return;
+            return null;
         }
 
         view.Initialize(
@@ -54,10 +54,16 @@ public class EnemyHealthBarManager : MonoBehaviour
             this,
             worldCamera
         );
+        return view;
     }
 
     public void Release(HealthBarView view, HealthBarType type)
     {
+        if (view == null || !view.gameObject.activeSelf)
+        {
+            return;
+        }
+
         view.ResetView();
         view.gameObject.SetActive(false);
         view.transform.SetParent(containers[type], false);

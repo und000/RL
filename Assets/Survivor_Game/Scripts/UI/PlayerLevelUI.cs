@@ -31,6 +31,7 @@ public class PlayerLevelUI : MonoBehaviour
             return;
         }
 
+        DisplayOnlyUI.Configure(experienceSlider);
         playerLevel.OnProgressChanged += UpdateLevelUI;
         UpdateLevelUI();
     }

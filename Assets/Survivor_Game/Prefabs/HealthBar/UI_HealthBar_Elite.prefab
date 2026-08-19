@@ -68,6 +68,7 @@ MonoBehaviour:
   damageTrailTransform: {fileID: 8300000000000000021}
   damageTrailDelay: 0.3
   damageTrailDuration: 0.55
+  deathDisplayDuration: 0.45
 --- !u!1 &8300000000000000010
 GameObject:
   m_ObjectHideFlags: 0

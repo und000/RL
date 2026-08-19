@@ -76,6 +76,31 @@ public class PlayerCombatStats : MonoBehaviour
     public DamageData CreateDamageData(float conditionalDamageIncreaseRate = 0f)
     {
         float baseAttack = GetBaseAttack();
+        return CreateDamageDataFromBaseAttack(baseAttack, conditionalDamageIncreaseRate);
+    }
+
+    public DamageData CreateWeaponDamageData(
+        float weaponBaseDamage,
+        float weaponDamageMultiplier = 1f,
+        float conditionalDamageIncreaseRate = 0f)
+    {
+        float baseAttack = characterBaseAttack + Mathf.Max(0f, weaponBaseDamage) +
+                           equipmentFlatAttack;
+        DamageData source = CreateDamageDataFromBaseAttack(
+            baseAttack,
+            conditionalDamageIncreaseRate);
+        return new DamageData(
+            source.NormalDamage * Mathf.Max(0f, weaponDamageMultiplier),
+            source.ArmorPenetrationRate,
+            source.FlatArmorPenetration,
+            source.TrueDamage,
+            source.MinimumDamage);
+    }
+
+    private DamageData CreateDamageDataFromBaseAttack(
+        float baseAttack,
+        float conditionalDamageIncreaseRate)
+    {
         float normalDamage = baseAttack * (
             GetLevelGrowthMultiplier() +
             damageIncreaseRate +

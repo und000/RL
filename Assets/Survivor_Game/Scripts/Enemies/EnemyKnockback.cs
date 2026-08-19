@@ -7,7 +7,7 @@ public enum KnockbackDirectionMode
     CustomDirection
 }
 
-public class EnemyKnockback : MonoBehaviour
+public class EnemyKnockback : MonoBehaviour, IEnemyPoolLifecycle
 {
     [Header("넉백 저항")]
     [SerializeField]
@@ -77,5 +77,24 @@ public class EnemyKnockback : MonoBehaviour
 
         velocity = Vector2.zero;
         return false;
+    }
+
+    public void OnEnemySpawned()
+    {
+        ResetKnockback();
+    }
+
+    public void OnEnemyDespawned()
+    {
+        ResetKnockback();
+    }
+
+    private void ResetKnockback()
+    {
+        knockbackDirection = Vector2.zero;
+        knockbackStrength = 0f;
+        knockbackDuration = 0f;
+        remainingTime = 0f;
+        remainingStopTime = 0f;
     }
 }

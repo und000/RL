@@ -31,6 +31,8 @@ public class Projectile : MonoBehaviour
     private DamageData damageData;
     private Vector2 travelDirection;
     private Vector2 attackOrigin;
+    [Header("Impact Visual")]
+    [SerializeField] private ProjectileImpactVisual impactPrefab;
 
     private void Awake()
     {
@@ -76,6 +78,7 @@ public class Projectile : MonoBehaviour
             hitEffect.Play();
         }
 
+        PlayImpact();
         Destroy(gameObject);
     }
 
@@ -92,5 +95,13 @@ public class Projectile : MonoBehaviour
             default:
                 return travelDirection;
         }
+    }
+
+    private void PlayImpact()
+    {
+        if (impactPrefab == null) return;
+        ProjectileImpactVisual impact = Instantiate(
+            impactPrefab, transform.position, Quaternion.identity);
+        impact.Play();
     }
 }
