@@ -1499,6 +1499,8 @@ GameObject:
   - component: {fileID: 2357903723699974786}
   - component: {fileID: 4883157265103038681}
   - component: {fileID: 7701681555836209195}
+  - component: {fileID: 1927676606630723316}
+  - component: {fileID: 544544963277155428}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -1667,8 +1669,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1e0281881d0d534d9ee662b57a3d7bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  walkSpeed: 5
-  runSpeed: 10
+  walkSpeed: 6
+  runSpeed: 12
 --- !u!114 &6487893672280201795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1701,6 +1703,8 @@ MonoBehaviour:
   startingHealthGrowthRate: 0.1
   healthGrowthDecreasePerLevel: 0.002
   minimumHealthGrowthRate: 0.01
+  reviveHealthRatio: 0.5
+  reviveInvulnerableDuration: 2
 --- !u!114 &4295413771658486563
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1782,8 +1786,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDodge
   holdThreshold: 0.18
   dodgeDistance: 4
-  dodgeSpeed: 18
-  dodgeCooldown: 1
+  dodgeSpeed: 30
+  dodgeCooldown: 0.2
   collisionSkin: 0.03
   enemyCollisionRestoreDelay: 0.2
 --- !u!114 &3095888963157525182
@@ -1883,3 +1887,48 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerEquipment
   startingEquipment: []
+--- !u!114 &1927676606630723316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8773493548037719947}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74ee25f2ccb6ce045a0b714470e2d326, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMovementVFX
+  characterImage: {fileID: 577335294280647152}
+  afterimagePrefab: {fileID: 5917337102410292706, guid: e94f37f701bec3844ab12115d031374f, type: 3}
+  afterimageColor: {r: 0.3, g: 0.65, b: 1, a: 0.28}
+  afterimageInterval: 0.02
+  afterimageLifetime: 0.12
+  smokePrefab: {fileID: 8559426175567128073, guid: eb45aba720d4f8149a302efdc4f82aa1, type: 3}
+  smokeColor: {r: 0.8, g: 0.87, b: 0.95, a: 0.55}
+  smokeInterval: 0.075
+  smokeLifetime: 0.32
+  smokeSize: 0.5
+  footOffset: {x: 0, y: 0.05}
+--- !u!95 &544544963277155428
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8773493548037719947}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 5deac09724d3ad64f9e6fcbbb10faaf0, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

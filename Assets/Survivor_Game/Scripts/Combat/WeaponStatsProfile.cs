@@ -86,11 +86,16 @@ public class WeaponHitWindow
 [Serializable]
 public class WeaponAttackStep
 {
+    [Header("Forward Movement")]
+    [Tooltip("Signed distance along the aim direction captured when the animation starts. Positive moves forward, negative moves backward, zero disables movement.")]
+    public float movementDistance;
+    [Tooltip("Movement time at weapon speed 1. Scales with weapon attack speed.")]
+    [Min(0.01f)] public float movementDuration = 0.1f;
     [Tooltip("State name in the Animator Controller, such as Attack1.")]
     public string animatorStateName = "Attack1";
     [Tooltip("Delay before this attack animation starts, in base seconds.")]
     [Min(0f)] public float startDelay;
-    [Tooltip("Desired base duration of the attack animation.")]
+    [Tooltip("Reference timeline for hit/input timings, not playback duration. Times within this duration are mapped proportionally onto the actual clip. Playback duration is clip length / weapon speed.")]
     [Min(0.05f)] public float duration = 0.5f;
     [Tooltip("Delay after the animation before the next attack begins.")]
     [Min(0f)] public float recoveryDuration = 0.15f;
@@ -113,6 +118,7 @@ public class WeaponAttackStep
         }
 
         startDelay = Mathf.Max(0f, startDelay);
+        movementDuration = Mathf.Max(0.01f, movementDuration);
         duration = Mathf.Max(0.05f, duration);
         recoveryDuration = Mathf.Max(0f, recoveryDuration);
         nextInputStartTime = Mathf.Clamp(nextInputStartTime, 0f, duration + recoveryDuration);
@@ -154,8 +160,12 @@ public class WeaponStatsProfile : ScriptableObject
     [SerializeField] private string idleStateName = "Idle";
     [Tooltip("Fixed seconds used to blend from an attack or skill back to Idle.")]
     [SerializeField, Min(0f)] private float idleReturnBlendDuration = 0.1f;
+    [Tooltip("Idle return progress: X = normalized time, Y = blend weight (0 attack pose, 1 idle pose).")]
+    [SerializeField] private AnimationCurve idleReturnCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     [Header("Procedural Swing VFX")]
+    [Tooltip("Pooled visual played at the enemy on each successful melee hit.")]
+    [SerializeField] private ProjectileImpactVisual hitImpactPrefab;
     [Tooltip("Shared procedural arc VFX prefab. Shape and timing are set per attack step.")]
     [SerializeField] private WeaponSwingVFX swingVfxPrefab;
 
@@ -184,6 +194,10 @@ public class WeaponStatsProfile : ScriptableObject
     [Tooltip("강공격 한 방의 모션·판정·연출. 콤보에는 참여하지 않는 단독 공격이다.")]
     [SerializeField] private WeaponAttackStep heavyAttack = new WeaponAttackStep();
 
+    [Header("Special Attack (Right Click)")]
+    [SerializeField] private bool useSpecialAttack;
+    [SerializeField] private WeaponAttackStep specialAttack = new WeaponAttackStep { animatorStateName = "SpecialAttack" };
+
     [Header("Weapon Skills")]
     [Tooltip("Optional weapon-specific skills. Each skill owns its own animation step list.")]
     [SerializeField] private WeaponSkillProfile[] weaponSkills = Array.Empty<WeaponSkillProfile>();
@@ -197,7 +211,9 @@ public class WeaponStatsProfile : ScriptableObject
     public ItemGrade Grade => grade;
     public string IdleStateName => idleStateName;
     public float IdleReturnBlendDuration => Mathf.Max(0f, idleReturnBlendDuration);
+    public AnimationCurve IdleReturnCurve => idleReturnCurve;
     public WeaponSwingVFX SwingVfxPrefab => swingVfxPrefab;
+    public ProjectileImpactVisual HitImpactPrefab => hitImpactPrefab;
     public WeaponDissolveSettings DissolveVfx => dissolveVfx;
     public bool RepeatWhileHeld => repeatWhileHeld;
     public float ComboResetWindow => comboResetWindow;
@@ -209,6 +225,8 @@ public class WeaponStatsProfile : ScriptableObject
             ? heavyAttack
             : null;
     public bool HasHeavyAttack => HeavyAttack != null;
+    public WeaponAttackStep SpecialAttack => useSpecialAttack ? specialAttack : null;
+    public bool HasSpecialAttack => SpecialAttack != null;
     public int HeavyAttackEnergyCost => Mathf.Max(0, heavyAttackEnergyCost);
 
     public int BasicAttackCount => basicAttackSteps != null ? basicAttackSteps.Length : 0;
@@ -245,6 +263,8 @@ public class WeaponStatsProfile : ScriptableObject
         heavyAttackEnergyCost = Mathf.Max(0, heavyAttackEnergyCost);
         if (heavyAttack == null) heavyAttack = new WeaponAttackStep();
         if (useHeavyAttack) heavyAttack.Normalize(0);
+        if (specialAttack == null) specialAttack = new WeaponAttackStep { animatorStateName = "SpecialAttack" };
+        if (useSpecialAttack) specialAttack.Normalize(0);
         if (weaponSkills == null) weaponSkills = Array.Empty<WeaponSkillProfile>();
     }
 }

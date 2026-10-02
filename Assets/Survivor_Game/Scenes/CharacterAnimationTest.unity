@@ -203,6 +203,7 @@ MonoBehaviour:
   worldCamera: {fileID: 0}
   angleOffset: 0
   maximumTurnSpeed: 0
+  applyRotation: 0
 --- !u!114 &242905612
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -415,6 +416,7 @@ MonoBehaviour:
   playerHealth: {fileID: 859371145}
   healthSlider: {fileID: 1657778945}
   healthText: {fileID: 1135365996}
+  damageTrail: {fileID: 0}
   damageTrailColor: {r: 1, g: 1, b: 1, a: 1}
   damageTrailDelay: 0.35
   damageTrailDuration: 0.6
@@ -433,6 +435,7 @@ MonoBehaviour:
   playerLevel: {fileID: 859371146}
   experienceSlider: {fileID: 982218655}
   levelText: {fileID: 0}
+  levelFormat: Lv. {0}
 --- !u!114 &402671756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -446,8 +449,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpUI
   playerLevel: {fileID: 859371146}
+  levelUpPanel: {fileID: 0}
+  titleText: {fileID: 0}
+  messageText: {fileID: 0}
+  continueButton: {fileID: 0}
   slowDownDuration: 0.5
   minimumTimeScale: 0
+  titleFormat: LEVEL UP!  Lv. {0}
+  messageLabel: "\uB808\uBCA8\uC774 \uC62C\uB790\uC2B5\uB2C8\uB2E4!"
+  continueLabel: "\uACC4\uC18D"
 --- !u!114 &402671757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1101,6 +1111,8 @@ MonoBehaviour:
   startingHealthGrowthRate: 0.1
   healthGrowthDecreasePerLevel: 0.002
   minimumHealthGrowthRate: 0.01
+  reviveHealthRatio: 0.5
+  reviveInvulnerableDuration: 2
 --- !u!114 &859371146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1180,6 +1192,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a81f99e1c71a4dc69d66e503dafd3310, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDodge
+  holdThreshold: 0.18
   dodgeDistance: 4
   dodgeSpeed: 18
   dodgeCooldown: 1
@@ -1343,8 +1356,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 5 / 5
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+  m_sharedMaterial: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1672,6 +1685,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90879b0bfe6704e4ea6ce491d2e336c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
+  roomDrivenMode: 1
+  roomAiDistance: 70
   defaultSpawnTable: {fileID: 11400000, guid: ba120a707d0645c99b4a0c82f6d40b6c, type: 2}
   player: {fileID: 859371142}
   spawnInterval: 0.5

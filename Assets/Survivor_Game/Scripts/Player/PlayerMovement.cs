@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 [AddComponentMenu("Player Movement")]
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField, Min(0f)] private float walkSpeed = 5f;
-    [SerializeField, Min(0f)] private float runSpeed = 10f;
+    [SerializeField, Min(0f)] private float walkSpeed = 6f;
+    [SerializeField, Min(0f)] private float runSpeed = 12f;
 
     private Rigidbody2D body;
     private Vector2 moveInput;
@@ -14,6 +14,26 @@ public class PlayerMovement : MonoBehaviour
     private bool isSprinting;
     private bool movementLocked;
     private float bonusSpeedRate;
+    private Vector2 attackDirection;
+    private float attackRemainingTime, attackSpeed;
+    private readonly RaycastHit2D[] attackCastHits = new RaycastHit2D[32];
+    private Collider2D movementCollider;
+    public bool CanAttack => isActiveAndEnabled && !movementLocked;
+
+    public void BeginAttackMovement(Vector2 direction, float distance, float duration)
+    {
+        StopAttackMovement();
+        if (!CanAttack || Mathf.Approximately(distance, 0f) || direction.sqrMagnitude < 0.001f) return;
+        attackDirection = direction.normalized * Mathf.Sign(distance);
+        attackRemainingTime = Mathf.Max(0.01f, duration);
+        attackSpeed = Mathf.Abs(distance) / attackRemainingTime;
+    }
+
+    public void StopAttackMovement()
+    {
+        if (attackRemainingTime > 0f && body != null) body.linearVelocity = Vector2.zero;
+        attackRemainingTime = 0f;
+    }
 
     public Vector2 MoveInput => moveInput;
     public Vector2 LastMoveDirection => lastMoveDirection;
@@ -40,6 +60,7 @@ public class PlayerMovement : MonoBehaviour
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
+        movementCollider = GetComponent<Collider2D>();
     }
 
     private void Update()
@@ -93,6 +114,24 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
+        if (attackRemainingTime > 0f)
+        {
+            float dt = Mathf.Min(Time.fixedDeltaTime, attackRemainingTime);
+            float distance = attackSpeed * dt;
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(LayerMask.GetMask("WorldObstacle"));
+            filter.useTriggers = false;
+            if (movementCollider != null)
+            {
+                int count = movementCollider.Cast(attackDirection, filter, attackCastHits, distance + 0.02f);
+                for (int i = 0; i < count; i++)
+                    distance = Mathf.Min(distance, Mathf.Max(0f, attackCastHits[i].distance - 0.02f));
+            }
+            body.linearVelocity = Vector2.zero;
+            body.MovePosition(body.position + attackDirection * distance);
+            attackRemainingTime = Mathf.Max(0f, attackRemainingTime - dt);
+            return;
+        }
         float currentSpeed = (isSprinting ? runSpeed : walkSpeed) * (1f + bonusSpeedRate);
         body.linearVelocity = moveInput * currentSpeed;
     }
@@ -100,6 +139,7 @@ public class PlayerMovement : MonoBehaviour
     public void SetMovementLocked(bool locked)
     {
         movementLocked = locked;
+        if (locked) StopAttackMovement();
         if (locked && body != null)
         {
             body.linearVelocity = Vector2.zero;
@@ -108,6 +148,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnDisable()
     {
+        StopAttackMovement();
         movementLocked = false;
         isSprinting = false;
         if (body != null)
