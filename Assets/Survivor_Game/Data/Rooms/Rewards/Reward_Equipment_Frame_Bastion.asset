@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a1d4b16bbcc3ad438e6660630891a5a, type: 3}
+  m_Name: Reward_Equipment_Frame_Bastion
+  m_EditorClassIdentifier: Assembly-CSharp::RoomRewardDefinition
+  displayName: 
+  description: "\uBB34\uAC81\uC9C0\uB9CC \uC880\uCC98\uB7FC \uBD80\uC11C\uC9C0\uC9C0
+    \uC54A\uB294\uB2E4."
+  icon: {fileID: 0}
+  tintColor: {r: 1, g: 1, b: 1, a: 1}
+  grade: 0
+  kind: 12
+  amount: 10
+  rate: 0.25
+  chip: {fileID: 0}
+  weapon: {fileID: 0}
+  equipment: {fileID: 11400000, guid: c716c24f2bff8034ab283eb07c46f58f, type: 2}
+  shopPrice: 210

@@ -1,10 +1,37 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// 적보다 먼저 Awake가 돌도록 실행 순서를 앞당긴다.
+[DefaultExecutionOrder(-100)]
 [RequireComponent(typeof(Canvas))]
 public class EnemyHealthBarManager : MonoBehaviour
 {
-    public static EnemyHealthBarManager Instance { get; private set; }
+    private static EnemyHealthBarManager instance;
+    private static bool isQuitting;
+
+    /// <summary>
+    /// Awake 순서에 의존하지 않도록, 정적 참조가 비어 있으면 씬에서 한 번 찾아 캐시한다.
+    /// 종료·씬 언로드 중에는 찾지 않는다.
+    /// </summary>
+    public static EnemyHealthBarManager Instance
+    {
+        get
+        {
+            if (instance == null && !isQuitting)
+            {
+                instance = FindFirstObjectByType<EnemyHealthBarManager>(
+                    FindObjectsInactive.Exclude);
+            }
+            return instance;
+        }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        instance = null;
+        isQuitting = false;
+    }
 
     [Header("체력바 프리팹")]
     [SerializeField] private HealthBarView normalHealthBarPrefab;
@@ -19,14 +46,14 @@ public class EnemyHealthBarManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (instance != null && instance != this)
         {
-            Debug.LogError("EnemyHealthBarManager가 씬에 두 개 이상 있습니다.");
+            Debug.LogError("EnemyHealthBarManager가 씬에 두 개 이상 있습니다.", this);
             enabled = false;
             return;
         }
 
-        Instance = this;
+        instance = this;
         worldCamera = Camera.main;
 
         CreateContainer(HealthBarType.Normal, "NormalHealthBars");
@@ -123,11 +150,16 @@ public class EnemyHealthBarManager : MonoBehaviour
         pools[type] = new Stack<HealthBarView>();
     }
 
+    private void OnApplicationQuit()
+    {
+        isQuitting = true;
+    }
+
     private void OnDestroy()
     {
-        if (Instance == this)
+        if (instance == this)
         {
-            Instance = null;
+            instance = null;
         }
     }
 }

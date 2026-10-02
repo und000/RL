@@ -3,34 +3,74 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 레벨이 오르면 시간을 늦추고 축하 창을 띄운다. 창은 프리팹에 미리 만들어 두고,
+/// 여기서는 켜고 끄며 문구만 채운다.
+/// </summary>
+[DisallowMultipleComponent]
+[AddComponentMenu("UI/Level Up UI")]
 public class LevelUpUI : MonoBehaviour
 {
+    /// <summary>창이 떠 있는 동안에는 공격·회피 같은 조작을 막는다.</summary>
     public static bool IsPopupOpen { get; private set; }
 
-    [SerializeField]
-    private PlayerLevel playerLevel;
+    [Header("연결")]
+    [Tooltip("비워 두면 Player 태그가 붙은 오브젝트에서 찾는다.")]
+    [SerializeField] private PlayerLevel playerLevel;
+    [Tooltip("켜고 끄는 창. 프리팹 안에 미리 놓아 둔 것을 연결한다. " +
+        "이 오브젝트만 꺼지고 스크립트가 붙은 뿌리는 켜져 있어야 한다.")]
+    [SerializeField] private GameObject levelUpPanel;
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMP_Text messageText;
+    [SerializeField] private Button continueButton;
 
     [Header("레벨업 시간 연출")]
     [SerializeField, Min(0f)] private float slowDownDuration = 0.5f;
     [SerializeField, Range(0f, 1f)] private float minimumTimeScale;
 
-    private GameObject levelUpPanel;
-    private TMP_Text titleText;
+    [Header("문구")]
+    [Tooltip("프리팹에는 폰트 경고를 피하려고 영문 자리표시가 들어 있다. " +
+        "여기 적은 것이 실제로 화면에 뜬다.")]
+    [SerializeField] private string titleFormat = "LEVEL UP!  Lv. {0}";
+    [SerializeField] private string messageLabel = "레벨이 올랐습니다!";
+    [SerializeField] private string continueLabel = "계속";
+
     private int previousLevel;
     private float timeScaleBeforePause = 1f;
 
     private void Awake()
     {
         IsPopupOpen = false;
-        CreateLevelUpPanel();
-        levelUpPanel.SetActive(false);
+
+        // 프리팹에 한글을 저장해 두면 폰트가 붙기 전 한 프레임 네모로 그려진다.
+        // 그래서 문구는 여기서 채운다.
+        GameFontManager.ApplyFont(titleText);
+        GameFontManager.ApplyFont(messageText);
+        if (messageText != null) messageText.text = messageLabel;
+
+        if (continueButton != null)
+        {
+            TMP_Text label = continueButton.GetComponentInChildren<TMP_Text>(true);
+            GameFontManager.ApplyFont(label);
+            if (label != null) label.text = continueLabel;
+            continueButton.onClick.AddListener(ContinueGame);
+        }
+
+        if (levelUpPanel != null) levelUpPanel.SetActive(false);
     }
 
     private void Start()
     {
         if (playerLevel == null)
         {
-            Debug.LogError("Level Up UI에 Player Level이 연결되지 않았습니다.");
+            GameObject player = GameObject.FindWithTag("Player");
+            playerLevel = player != null
+                ? player.GetComponentInChildren<PlayerLevel>(true) : null;
+        }
+
+        if (playerLevel == null || levelUpPanel == null)
+        {
+            Debug.LogError("Level Up UI에 Player Level과 창이 연결되지 않았습니다.", this);
             enabled = false;
             return;
         }
@@ -49,7 +89,7 @@ public class LevelUpUI : MonoBehaviour
         }
 
         previousLevel = currentLevel;
-        BeginLevelUpSequence(currentLevel);
+        BeginLevelUpSequence();
     }
 
     private void OnDestroy()
@@ -57,6 +97,11 @@ public class LevelUpUI : MonoBehaviour
         if (playerLevel != null)
         {
             playerLevel.OnProgressChanged -= HandleProgressChanged;
+        }
+
+        if (continueButton != null)
+        {
+            continueButton.onClick.RemoveListener(ContinueGame);
         }
 
         if (IsPopupOpen)
@@ -67,7 +112,7 @@ public class LevelUpUI : MonoBehaviour
         IsPopupOpen = false;
     }
 
-    private void BeginLevelUpSequence(int currentLevel)
+    private void BeginLevelUpSequence()
     {
         if (IsPopupOpen)
         {
@@ -75,7 +120,6 @@ public class LevelUpUI : MonoBehaviour
         }
 
         IsPopupOpen = true;
-        titleText.text = $"LEVEL UP!  Lv. {currentLevel}";
         timeScaleBeforePause = Time.timeScale;
         StartCoroutine(SlowDownAndShowPopup());
     }
@@ -98,6 +142,11 @@ public class LevelUpUI : MonoBehaviour
         }
 
         Time.timeScale = targetTimeScale;
+        // 느려지는 동안 레벨이 더 올랐을 수 있으므로 뜨는 순간의 레벨을 적는다.
+        if (titleText != null)
+        {
+            titleText.text = string.Format(titleFormat, playerLevel.GetCurrentLevel());
+        }
         levelUpPanel.SetActive(true);
     }
 
@@ -106,98 +155,5 @@ public class LevelUpUI : MonoBehaviour
         levelUpPanel.SetActive(false);
         Time.timeScale = timeScaleBeforePause;
         IsPopupOpen = false;
-    }
-
-    private void CreateLevelUpPanel()
-    {
-        levelUpPanel = CreateUIObject("LevelUpPanel", transform);
-        StretchToParent(levelUpPanel.GetComponent<RectTransform>());
-
-        Image panelImage = levelUpPanel.AddComponent<Image>();
-        panelImage.color = new Color(0f, 0f, 0f, 0.75f);
-
-        GameObject window = CreateUIObject("Window", levelUpPanel.transform);
-        RectTransform windowTransform = window.GetComponent<RectTransform>();
-        windowTransform.anchorMin = new Vector2(0.5f, 0.5f);
-        windowTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        windowTransform.sizeDelta = new Vector2(520f, 300f);
-
-        Image windowImage = window.AddComponent<Image>();
-        windowImage.color = new Color(0.12f, 0.16f, 0.24f, 1f);
-
-        titleText = CreateText(
-            "TitleText", windowTransform, new Vector2(0f, 80f),
-            new Vector2(460f, 70f), 36f
-        );
-
-        TMP_Text messageText = CreateText(
-            "MessageText", windowTransform, new Vector2(0f, 15f),
-            new Vector2(440f, 60f), 22f
-        );
-        messageText.text = "레벨이 올랐습니다!";
-
-        CreateContinueButton(windowTransform);
-    }
-
-    private void CreateContinueButton(Transform parent)
-    {
-        GameObject buttonObject = CreateUIObject("ContinueButton", parent);
-        RectTransform buttonTransform = buttonObject.GetComponent<RectTransform>();
-        buttonTransform.anchorMin = new Vector2(0.5f, 0.5f);
-        buttonTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        buttonTransform.anchoredPosition = new Vector2(0f, -85f);
-        buttonTransform.sizeDelta = new Vector2(220f, 60f);
-
-        Image buttonImage = buttonObject.AddComponent<Image>();
-        buttonImage.color = new Color(0.2f, 0.65f, 0.95f, 1f);
-
-        Button continueButton = buttonObject.AddComponent<Button>();
-        continueButton.targetGraphic = buttonImage;
-        continueButton.onClick.AddListener(ContinueGame);
-
-        TMP_Text buttonText = CreateText(
-            "ButtonText", buttonTransform, Vector2.zero,
-            buttonTransform.sizeDelta, 24f
-        );
-        buttonText.text = "계속";
-    }
-
-    private static GameObject CreateUIObject(string objectName, Transform parent)
-    {
-        GameObject uiObject = new GameObject(objectName, typeof(RectTransform));
-        uiObject.transform.SetParent(parent, false);
-        return uiObject;
-    }
-
-    private static TMP_Text CreateText(
-        string objectName,
-        Transform parent,
-        Vector2 position,
-        Vector2 size,
-        float fontSize)
-    {
-        GameObject textObject = CreateUIObject(objectName, parent);
-        RectTransform textTransform = textObject.GetComponent<RectTransform>();
-        textTransform.anchorMin = new Vector2(0.5f, 0.5f);
-        textTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        textTransform.anchoredPosition = position;
-        textTransform.sizeDelta = size;
-
-        TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
-        GameFontManager.ApplyFont(text);
-        text.fontSize = fontSize;
-        text.fontStyle = FontStyles.Bold;
-        text.alignment = TextAlignmentOptions.Center;
-        text.color = Color.white;
-        text.raycastTarget = false;
-        return text;
-    }
-
-    private static void StretchToParent(RectTransform target)
-    {
-        target.anchorMin = Vector2.zero;
-        target.anchorMax = Vector2.one;
-        target.offsetMin = Vector2.zero;
-        target.offsetMax = Vector2.zero;
     }
 }

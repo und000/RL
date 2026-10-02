@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50e9974ad207e704e9df650f21eb39e1, type: 3}
+  m_Name: Equipment_Actuator_Overload
+  m_EditorClassIdentifier: Assembly-CSharp::EquipmentDefinition
+  displayName: "\uACFC\uBD80\uD558 \uAD6C\uB3D9\uACC4"
+  description: "\uC815\uACA9\uC744 \uB118\uACA8 \uB3CC\uB9B0\uB2E4. \uBAB8\uC774
+    \uBC84\uD168 \uC8FC\uC9C0 \uC54A\uB294\uB2E4."
+  icon: {fileID: 0}
+  slot: 2
+  grade: 4
+  modifiers:
+  - stat: 1
+    value: 0.18
+  - stat: 2
+    value: 0.12
+  - stat: 5
+    value: -6

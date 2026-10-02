@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50e9974ad207e704e9df650f21eb39e1, type: 3}
+  m_Name: Equipment_Actuator_HighTorque
+  m_EditorClassIdentifier: Assembly-CSharp::EquipmentDefinition
+  displayName: "\uACE0\uCD9C\uB825 \uAD6C\uB3D9\uACC4"
+  description: "\uD55C \uBC88\uC5D0 \uBC00\uC5B4\uB0B4\uB294 \uD798\uC774 \uD06C\uB2E4."
+  icon: {fileID: 0}
+  slot: 2
+  grade: 2
+  modifiers:
+  - stat: 0
+    value: 10
+  - stat: 1
+    value: 0.06

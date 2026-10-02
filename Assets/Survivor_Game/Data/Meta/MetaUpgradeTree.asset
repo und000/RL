@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 694f61be31584f84f9e4371be3284a17, type: 3}
+  m_Name: MetaUpgradeTree
+  m_EditorClassIdentifier: Assembly-CSharp::MetaUpgradeTree
+  nodes:
+  - {fileID: 11400000, guid: 7f8f07db7e15c62408c503cc89005f58, type: 2}
+  - {fileID: 11400000, guid: c082454d0ae8ee44885c23cbae6402fa, type: 2}
+  - {fileID: 11400000, guid: cc02ee6a0d782f349ba0a8a18e1fec00, type: 2}
+  - {fileID: 11400000, guid: 9386394f9f76c1843a55e7cc3bfe45df, type: 2}
+  - {fileID: 11400000, guid: 452a3a31184a26346979eef53e12c848, type: 2}
+  - {fileID: 11400000, guid: 3e41dba31c3466c449f2c5a7e1bdc2d2, type: 2}
+  - {fileID: 11400000, guid: 70dbd8b995c9fdd4aaa708c4ee6313c5, type: 2}
+  - {fileID: 11400000, guid: 7c401cea2b21fd14dbf7fc9f44f68a04, type: 2}
+  - {fileID: 11400000, guid: ea9827128f8525644b7954565b3a4043, type: 2}
+  - {fileID: 11400000, guid: 67d440a3abc2c8d4fa4e148a6d1eb11c, type: 2}
+  - {fileID: 11400000, guid: 8293d14c2e53c9046abf77fa11f674f3, type: 2}
+  - {fileID: 11400000, guid: c48c892142579a843af20a8a8878906f, type: 2}

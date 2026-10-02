@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1ca7fdfbe82ab4881bb5834eee1316, type: 3}
+  m_Name: Meta_StrikerCore
+  m_EditorClassIdentifier: Assembly-CSharp::MetaUpgradeNode
+  id: striker_core
+  displayName: "\uD0C0\uACA9 \uCF54\uC5B4"
+  description: "\uCD9C\uB825\uC744 \uB04C\uC5B4\uC62C\uB824 \uD55C \uB300\uAC00 \uB354
+    \uC544\uD504\uAC8C \uB4E4\uC5B4\uAC04\uB2E4."
+  grade: 0
+  order: 20
+  maxLevel: 5
+  baseCost: 25
+  costGrowth: 20
+  requirements: []
+  effects:
+  - kind: 0
+    stat: 0
+    valuePerLevel: 2

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0830ae6fd71028f478b7e61b37695be1, type: 3}
+  m_Name: ChapterProfile_C3
+  m_EditorClassIdentifier: Assembly-CSharp::ChapterProfile
+  displayName: "3\uC7A5"
+  floors:
+  - {fileID: 11400000, guid: 3914935543ec6674e884c3acc64b85ad, type: 2}
+  - {fileID: 11400000, guid: d419b7fd95b296246975f46768081070, type: 2}
+  - {fileID: 11400000, guid: fe86711854e58554db5efc86a78a545e, type: 2}

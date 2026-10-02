@@ -137,6 +137,9 @@ public class PlayerCombatStats : MonoBehaviour
 
     public float GetDamageIncreaseRate() => damageIncreaseRate;
     public float GetTrueDamageRate() => trueDamageRate;
+    public int GetEquipmentFlatAttack() => equipmentFlatAttack;
+    public float GetArmorPenetrationRate() => armorPenetrationRate;
+    public int GetFlatArmorPenetration() => flatArmorPenetration;
 
     public void SetWeaponAttack(int value)
     {

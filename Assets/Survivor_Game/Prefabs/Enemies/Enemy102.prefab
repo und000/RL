@@ -1,0 +1,115 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &6474550016200903930
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8100000000000000001, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_Name
+      value: Enemy102
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000002, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000003, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_Color.b
+      value: 0.72
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000003, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_Color.g
+      value: 0.78
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000003, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: m_Color.r
+      value: 0.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000007, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: profile
+      value: 
+      objectReference: {fileID: 11400000, guid: 73161321d6d2a4e4ba510d71476ceaba, type: 2}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: spreadAngle
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: attackInterval
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: windupDuration
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: projectileSpeed
+      value: 6.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: projectileDamage
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: projectilePrefab
+      value: 
+      objectReference: {fileID: 850588367506320924, guid: 8f746ead2b8507e4989b12f3917f8eb6, type: 3}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: projectilesPerShot
+      value: 5
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d4444444444444444444444444444444, type: 3}

@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_SpriteFlame
+  m_Shader: {fileID: 4800000, guid: 253e91f6ca3a4f4caed43a8a119706f7, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties:
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTex:
+        m_Texture: {fileID: 2800000, guid: f3a914e8dfb947699031d99993e1bef5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BaseSolidness: 0.34
+    - _BaseWidth: 0.95
+    - _BottomFade: 0.025
+    - _DistortionStrength: 0.08
+    - _DstBlend: 1
+    - _EdgeSoftness: 0.075
+    - _EnableExternalAlpha: 0
+    - _FlickerScale: 8
+    - _FlickerSpeed: 7
+    - _FlickerStrength: 0.035
+    - _Intensity: 1
+    - _NoiseBlend: 0.5
+    - _NoiseThreshold: 0.42
+    - _Opacity: 1
+    - _SrcBlend: 5
+    - _TaperPower: 1.35
+    - _TipBreakup: 0.22
+    - _TipWidth: 0.12
+    - _TopFade: 0.12
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _CoreColor: {r: 4, g: 1.4, b: 0.15, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _MidColor: {r: 2.2, g: 0.28, b: 0.015, a: 1}
+    - _NoiseScrollA: {r: 0.04, g: -0.45, b: 0, a: 0}
+    - _NoiseScrollB: {r: -0.08, g: -0.8, b: 0, a: 0}
+    - _NoiseTilingA: {r: 1.35, g: 1.15, b: 0, a: 0}
+    - _NoiseTilingB: {r: 2.7, g: 2.1, b: 0, a: 0}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TipColor: {r: 0.55, g: 0.015, b: 0.002, a: 0.45}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+

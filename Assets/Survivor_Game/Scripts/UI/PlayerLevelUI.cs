@@ -2,33 +2,50 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 경험치 막대와 레벨 표시를 갱신한다. 막대와 글자는 프리팹에 미리 만들어 두고,
+/// 여기서는 값만 다시 넣는다.
+/// </summary>
+[DisallowMultipleComponent]
+[AddComponentMenu("UI/Player Level UI")]
 public class PlayerLevelUI : MonoBehaviour
 {
-    [SerializeField]
-    private PlayerLevel playerLevel;
+    [Header("연결")]
+    [Tooltip("비워 두면 Player 태그가 붙은 오브젝트에서 찾는다.")]
+    [SerializeField] private PlayerLevel playerLevel;
+    [SerializeField] private Slider experienceSlider;
+    [Tooltip("'Lv. 3'처럼 레벨을 적는 글자. 프리팹에 미리 놓아 둔 것을 연결한다.")]
+    [SerializeField] private TMP_Text levelText;
 
-    [SerializeField]
-    private Slider experienceSlider;
-
-    [SerializeField]
-    private TMP_Text levelText;
+    [Header("문구")]
+    [SerializeField] private string levelFormat = "Lv. {0}";
 
     private void Awake()
     {
-        if (levelText == null)
-        {
-            CreateLevelText();
-        }
+        // 첫 캔버스 갱신 전에 폰트를 바꿔야 한글이 한 프레임 네모로 보이지 않는다.
+        GameFontManager.ApplyFont(levelText);
     }
 
     private void Start()
     {
-        if (playerLevel == null ||
-            experienceSlider == null)
+        if (playerLevel == null)
         {
-            Debug.LogError("Player Level UI에 필요한 오브젝트가 연결되지 않았습니다.");
+            GameObject player = GameObject.FindWithTag("Player");
+            playerLevel = player != null
+                ? player.GetComponentInChildren<PlayerLevel>(true) : null;
+        }
+
+        if (playerLevel == null || experienceSlider == null)
+        {
+            Debug.LogError("Player Level UI에 필요한 오브젝트가 연결되지 않았습니다.", this);
             enabled = false;
             return;
+        }
+        if (levelText == null)
+        {
+            Debug.LogWarning(
+                "Level Text가 비어 있어 레벨 표시가 뜨지 않습니다. 프리팹에서 연결해 주세요.",
+                this);
         }
 
         DisplayOnlyUI.Configure(experienceSlider);
@@ -46,39 +63,10 @@ public class PlayerLevelUI : MonoBehaviour
 
     private void UpdateLevelUI()
     {
-        int currentLevel = playerLevel.GetCurrentLevel();
-        int currentExperience = playerLevel.GetCurrentExperience();
-        int experienceToNextLevel = playerLevel.GetExperienceToNextLevel();
+        experienceSlider.maxValue = playerLevel.GetExperienceToNextLevel();
+        experienceSlider.value = playerLevel.GetCurrentExperience();
 
-        experienceSlider.maxValue = experienceToNextLevel;
-        experienceSlider.value = currentExperience;
-        levelText.text = $"Lv. {currentLevel}";
-    }
-
-    private void CreateLevelText()
-    {
-        GameObject levelTextObject = new GameObject(
-            "LevelText",
-            typeof(RectTransform),
-            typeof(TextMeshProUGUI)
-        );
-
-        RectTransform levelTextTransform =
-            levelTextObject.GetComponent<RectTransform>();
-
-        levelTextTransform.SetParent(transform, false);
-        levelTextTransform.anchorMin = new Vector2(0f, 1f);
-        levelTextTransform.anchorMax = new Vector2(0f, 1f);
-        levelTextTransform.pivot = new Vector2(0.5f, 0.5f);
-        levelTextTransform.anchoredPosition = new Vector2(80f, -110f);
-        levelTextTransform.sizeDelta = new Vector2(120f, 40f);
-
-        levelText = levelTextObject.GetComponent<TextMeshProUGUI>();
-        GameFontManager.ApplyFont(levelText);
-        levelText.fontSize = 28f;
-        levelText.fontStyle = FontStyles.Bold;
-        levelText.alignment = TextAlignmentOptions.Center;
-        levelText.color = Color.white;
-        levelText.raycastTarget = false;
+        if (levelText == null) return;
+        levelText.text = string.Format(levelFormat, playerLevel.GetCurrentLevel());
     }
 }

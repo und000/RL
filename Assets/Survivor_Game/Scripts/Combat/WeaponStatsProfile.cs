@@ -8,6 +8,56 @@ public enum WeaponKnockbackDirection
 }
 
 [Serializable]
+public class WeaponDissolveSettings
+{
+    [Header("재생")]
+    [Min(0.01f)] public float duration = 0.18f;
+
+    [Header("노이즈 텍스처")]
+    public Texture2D noiseTexture;
+    public Vector2 noiseTiling = Vector2.one;
+    [Range(-180f, 180f)] public float noiseAngle;
+    [Range(-150f, 150f)] public float noiseArcBendAngle = 60f;
+    public Vector2 noiseArcBendCenter = new Vector2(0.5f, 0.5f);
+    public Vector2 noiseScrollSpeed = new Vector2(0.8f, 0f);
+    [Range(0.1f, 4f)] public float noiseContrast = 1.35f;
+    public bool randomizeNoiseOffset;
+
+    [Header("진행 형태")]
+    [Range(0f, 1f)] public float shapeRoundness = 1f;
+    public Vector2 dissolveDirection = Vector2.right;
+    [Range(0f, 1f)] public float progressSpread = 0.7f;
+    public bool reverseDirection;
+
+    [Header("원형 진행")]
+    public Vector2 radialCenter = new Vector2(0.5f, 0.5f);
+    public Vector2 radialAspect = Vector2.one;
+    public bool radialOutsideIn;
+
+    [Header("디졸브 경계 부드러움")]
+    [Range(0.001f, 0.2f)] public float softness = 0.055f;
+
+    public void Normalize()
+    {
+        duration = Mathf.Max(0.01f, duration);
+        noiseTiling.x = Mathf.Max(0.01f, Mathf.Abs(noiseTiling.x));
+        noiseTiling.y = Mathf.Max(0.01f, Mathf.Abs(noiseTiling.y));
+        noiseAngle = Mathf.Clamp(noiseAngle, -180f, 180f);
+        noiseArcBendAngle = Mathf.Clamp(noiseArcBendAngle, -150f, 150f);
+        noiseArcBendCenter.x = Mathf.Clamp01(noiseArcBendCenter.x);
+        noiseArcBendCenter.y = Mathf.Clamp01(noiseArcBendCenter.y);
+        noiseContrast = Mathf.Clamp(noiseContrast, 0.1f, 4f);
+        shapeRoundness = Mathf.Clamp01(shapeRoundness);
+        progressSpread = Mathf.Clamp01(progressSpread);
+        radialCenter.x = Mathf.Clamp01(radialCenter.x);
+        radialCenter.y = Mathf.Clamp01(radialCenter.y);
+        radialAspect.x = Mathf.Max(0.01f, Mathf.Abs(radialAspect.x));
+        radialAspect.y = Mathf.Max(0.01f, Mathf.Abs(radialAspect.y));
+        softness = Mathf.Clamp(softness, 0.001f, 0.2f);
+    }
+}
+
+[Serializable]
 public class WeaponHitWindow
 {
     [Tooltip("ID of the collider group configured on the weapon prefab.")]
@@ -50,6 +100,8 @@ public class WeaponAttackStep
     [Min(0f)] public float nextInputEndTime = 0.65f;
     [Tooltip("Each entry is an independent hit. Multiple entries enable multi-hit attacks.")]
     public WeaponHitWindow[] hitWindows = { new WeaponHitWindow() };
+    [Tooltip("Optional procedural swing visual for this attack step.")]
+    public WeaponSwingArcSettings swingVfx = new WeaponSwingArcSettings();
 
     public float TotalDuration => startDelay + duration + recoveryDuration;
 
@@ -74,6 +126,8 @@ public class WeaponAttackStep
         {
             hitWindow?.Normalize(duration);
         }
+        if (swingVfx == null) swingVfx = new WeaponSwingArcSettings();
+        swingVfx.Normalize();
     }
 }
 
@@ -82,6 +136,10 @@ public class WeaponStatsProfile : ScriptableObject
 {
     [Header("Weapon Prefab")]
     [SerializeField] private GameObject weaponPrefab;
+    [Tooltip("화면에 띄울 무기 이름. 비우면 에셋 이름을 쓴다.")]
+    [SerializeField] private string displayName;
+    [Tooltip("무기 등급. 바닥에 떨어져 있을 때의 연출 색이 여기서 나온다.")]
+    [SerializeField] private ItemGrade grade = ItemGrade.Standard;
 
     [Header("Core Attack Stats")]
     [Tooltip("Weapon damage added to the character and equipment base attack.")]
@@ -94,6 +152,17 @@ public class WeaponStatsProfile : ScriptableObject
     [Header("Required Motion")]
     [Tooltip("Every weapon must have an Idle state in its Animator Controller.")]
     [SerializeField] private string idleStateName = "Idle";
+    [Tooltip("Fixed seconds used to blend from an attack or skill back to Idle.")]
+    [SerializeField, Min(0f)] private float idleReturnBlendDuration = 0.1f;
+
+    [Header("Procedural Swing VFX")]
+    [Tooltip("Shared procedural arc VFX prefab. Shape and timing are set per attack step.")]
+    [SerializeField] private WeaponSwingVFX swingVfxPrefab;
+
+    [Header("Shared Dissolve VFX")]
+    [Tooltip("Applied through MaterialPropertyBlock; no per-weapon material is required.")]
+    [SerializeField] private WeaponDissolveSettings dissolveVfx =
+        new WeaponDissolveSettings();
 
     [Header("Basic Attack Input")]
     [SerializeField] private bool repeatWhileHeld;
@@ -107,6 +176,14 @@ public class WeaponStatsProfile : ScriptableObject
         new WeaponAttackStep()
     };
 
+    [Header("Heavy Attack (Shift + Left Click)")]
+    [Tooltip("Shift를 누른 채 좌클릭하면 나가는 강공격을 이 무기가 쓰는지 여부.")]
+    [SerializeField] private bool useHeavyAttack;
+    [Tooltip("강공격 1회에 소모하는 플레이어 에너지. 0이면 소모하지 않는다.")]
+    [SerializeField, Min(0)] private int heavyAttackEnergyCost = 10;
+    [Tooltip("강공격 한 방의 모션·판정·연출. 콤보에는 참여하지 않는 단독 공격이다.")]
+    [SerializeField] private WeaponAttackStep heavyAttack = new WeaponAttackStep();
+
     [Header("Weapon Skills")]
     [Tooltip("Optional weapon-specific skills. Each skill owns its own animation step list.")]
     [SerializeField] private WeaponSkillProfile[] weaponSkills = Array.Empty<WeaponSkillProfile>();
@@ -115,10 +192,25 @@ public class WeaponStatsProfile : ScriptableObject
     public float AttackSpeedMultiplier => Mathf.Max(0.01f, attackSpeedMultiplier);
     public float DamageMultiplier => damageMultiplier;
     public GameObject WeaponPrefab => weaponPrefab;
+    public string DisplayName =>
+        string.IsNullOrWhiteSpace(displayName) ? name : displayName;
+    public ItemGrade Grade => grade;
     public string IdleStateName => idleStateName;
+    public float IdleReturnBlendDuration => Mathf.Max(0f, idleReturnBlendDuration);
+    public WeaponSwingVFX SwingVfxPrefab => swingVfxPrefab;
+    public WeaponDissolveSettings DissolveVfx => dissolveVfx;
     public bool RepeatWhileHeld => repeatWhileHeld;
     public float ComboResetWindow => comboResetWindow;
     public float InputBufferDuration => inputBufferDuration;
+    /// <summary>Use Heavy Attack이 꺼져 있거나 상태 이름이 비면 강공격이 없는 무기로 취급한다.</summary>
+    public WeaponAttackStep HeavyAttack =>
+        useHeavyAttack && heavyAttack != null &&
+        !string.IsNullOrWhiteSpace(heavyAttack.animatorStateName)
+            ? heavyAttack
+            : null;
+    public bool HasHeavyAttack => HeavyAttack != null;
+    public int HeavyAttackEnergyCost => Mathf.Max(0, heavyAttackEnergyCost);
+
     public int BasicAttackCount => basicAttackSteps != null ? basicAttackSteps.Length : 0;
     public int SkillCount => weaponSkills != null ? weaponSkills.Length : 0;
     public WeaponSkillProfile[] WeaponSkills => weaponSkills;
@@ -140,6 +232,9 @@ public class WeaponStatsProfile : ScriptableObject
         baseDamage = Mathf.Max(0f, baseDamage);
         attackSpeedMultiplier = Mathf.Max(0.01f, attackSpeedMultiplier);
         damageMultiplier = Mathf.Max(0f, damageMultiplier);
+        idleReturnBlendDuration = Mathf.Max(0f, idleReturnBlendDuration);
+        if (dissolveVfx == null) dissolveVfx = new WeaponDissolveSettings();
+        dissolveVfx.Normalize();
         comboResetWindow = Mathf.Max(0f, comboResetWindow);
         inputBufferDuration = Mathf.Max(0f, inputBufferDuration);
         if (basicAttackSteps == null) basicAttackSteps = Array.Empty<WeaponAttackStep>();
@@ -147,6 +242,9 @@ public class WeaponStatsProfile : ScriptableObject
         {
             basicAttackSteps[index]?.Normalize(index);
         }
+        heavyAttackEnergyCost = Mathf.Max(0, heavyAttackEnergyCost);
+        if (heavyAttack == null) heavyAttack = new WeaponAttackStep();
+        if (useHeavyAttack) heavyAttack.Normalize(0);
         if (weaponSkills == null) weaponSkills = Array.Empty<WeaponSkillProfile>();
     }
 }

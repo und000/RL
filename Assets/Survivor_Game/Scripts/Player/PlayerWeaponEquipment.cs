@@ -41,6 +41,13 @@ public class PlayerWeaponEquipment : MonoBehaviour
         instanceTransform.localPosition = Vector3.zero;
         instanceTransform.localRotation = Quaternion.identity;
         instanceTransform.localScale = Vector3.one;
+
+        SpriteFractureDissolveVFX[] dissolveEffects =
+            WeaponInstance.GetComponentsInChildren<SpriteFractureDissolveVFX>(true);
+        foreach (SpriteFractureDissolveVFX dissolveEffect in dissolveEffects)
+        {
+            if (dissolveEffect != null) dissolveEffect.Configure(equippedWeapon.DissolveVfx);
+        }
     }
 
     private void ClearWeaponInstance()

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1ca7fdfbe82ab4881bb5834eee1316, type: 3}
+  m_Name: Meta_BackupCore
+  m_EditorClassIdentifier: Assembly-CSharp::MetaUpgradeNode
+  id: backup_core
+  displayName: "\uC608\uBE44 \uAE30\uB3D9 \uCF54\uC5B4"
+  description: "\uBA48\uCDB0\uB3C4 \uD55C \uBC88\uC740 \uADF8 \uC790\uB9AC\uC5D0\uC11C
+    \uB2E4\uC2DC \uC77C\uC5B4\uB09C\uB2E4."
+  grade: 4
+  order: 120
+  maxLevel: 2
+  baseCost: 250
+  costGrowth: 250
+  requirements:
+  - {fileID: 11400000, guid: 7f8f07db7e15c62408c503cc89005f58, type: 2}
+  effects:
+  - kind: 6
+    stat: 0
+    valuePerLevel: 1

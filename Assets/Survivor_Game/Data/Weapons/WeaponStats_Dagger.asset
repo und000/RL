@@ -1,0 +1,172 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56e610e79453453a8879a9147a53c616, type: 3}
+  m_Name: WeaponStats_Dagger
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponStatsProfile
+  weaponPrefab: {fileID: 5552179284087984899, guid: d2c1ec1c7e8930f45bb9269cc36d1157, type: 3}
+  displayName: "\uB2E8\uAC80"
+  grade: 1
+  baseDamage: 11
+  attackSpeedMultiplier: 1.7
+  damageMultiplier: 0.8
+  idleStateName: Idle
+  idleReturnBlendDuration: 0.1
+  swingVfxPrefab: {fileID: 1003, guid: 6e33b555d7894a28ac003e45ff69f46c, type: 3}
+  dissolveVfx:
+    duration: 0.18
+    noiseTexture: {fileID: 2800000, guid: ef146046f76446b9a723915494e8805d, type: 3}
+    noiseTiling: {x: 1, y: 1}
+    noiseAngle: 0
+    noiseArcBendAngle: 60
+    noiseArcBendCenter: {x: 0.5, y: 0.5}
+    noiseScrollSpeed: {x: 0.8, y: 0}
+    noiseContrast: 1.35
+    randomizeNoiseOffset: 0
+    shapeRoundness: 1
+    dissolveDirection: {x: 1, y: 0}
+    progressSpread: 0.7
+    reverseDirection: 0
+    radialCenter: {x: 0.5, y: 0.5}
+    radialAspect: {x: 1, y: 1}
+    radialOutsideIn: 0
+    softness: 0.055
+  repeatWhileHeld: 1
+  comboResetWindow: 0.5
+  inputBufferDuration: 0.25
+  basicAttackSteps:
+  - animatorStateName: Attack1
+    startDelay: 0
+    duration: 0.5
+    recoveryDuration: 0.06
+    nextInputStartTime: 0
+    nextInputEndTime: 0.56
+    hitWindows:
+    - hitboxGroupId: Main
+      startTime: 0.1
+      endTime: 0.3
+      damageMultiplier: 1
+      knockbackStrength: 1.2
+      knockbackDuration: 0.12
+      knockbackDirection: 0
+    swingVfx:
+      enabled: 1
+      localPosition: {x: 0, y: 0}
+      localRotation: 0
+      effectSize: {x: 9, y: 9}
+      arcAngle: 155
+      centerAngle: 0
+      radius: 0.62
+      thickness: 0.11
+      taperPower: 1.6
+      edgeSoftness: 0.025
+      reverse: 0
+      outerColor: {r: 1, g: 0.08, b: 0.01, a: 0.35}
+      mainColor: {r: 1, g: 0.28, b: 0.04, a: 1}
+      coreColor: {r: 4, g: 1.2, b: 0.25, a: 1}
+      revealDuration: 0.09
+      holdDuration: 0.02
+      fadeDuration: 0.15
+      minimumMotionSpeed: 1
+      maximumMotionSpeed: 25
+      maximumBlurLength: 0.1
+      motionResponseSpeed: 24
+      useAfterimages: 1
+      afterimageInterval: 0.035
+      afterimageMinimumDistance: 0.08
+      afterimageLifetime: 0.12
+      afterimageOpacity: 0.32
+  - animatorStateName: Attack2
+    startDelay: 0
+    duration: 0.5
+    recoveryDuration: 0.06
+    nextInputStartTime: 0
+    nextInputEndTime: 0.56
+    hitWindows:
+    - hitboxGroupId: Main
+      startTime: 0.1
+      endTime: 0.3
+      damageMultiplier: 1
+      knockbackStrength: 1.2
+      knockbackDuration: 0.12
+      knockbackDirection: 0
+    swingVfx:
+      enabled: 1
+      localPosition: {x: 0, y: 0}
+      localRotation: 0
+      effectSize: {x: 9, y: 9}
+      arcAngle: 155
+      centerAngle: 0
+      radius: 0.62
+      thickness: 0.11
+      taperPower: 1.6
+      edgeSoftness: 0.025
+      reverse: 1
+      outerColor: {r: 1, g: 0.08, b: 0.01, a: 0.35}
+      mainColor: {r: 1, g: 0.28, b: 0.04, a: 1}
+      coreColor: {r: 4, g: 1.2, b: 0.25, a: 1}
+      revealDuration: 0.09
+      holdDuration: 0.02
+      fadeDuration: 0.15
+      minimumMotionSpeed: 1
+      maximumMotionSpeed: 25
+      maximumBlurLength: 0.1
+      motionResponseSpeed: 24
+      useAfterimages: 1
+      afterimageInterval: 0.035
+      afterimageMinimumDistance: 0.08
+      afterimageLifetime: 0.12
+      afterimageOpacity: 0.32
+  useHeavyAttack: 1
+  heavyAttackEnergyCost: 6
+  heavyAttack:
+    animatorStateName: HeavyAttack
+    startDelay: 0
+    duration: 0.7
+    recoveryDuration: 0.25
+    nextInputStartTime: 0
+    nextInputEndTime: 0
+    hitWindows:
+    - hitboxGroupId: Main
+      startTime: 0.3
+      endTime: 0.52
+      damageMultiplier: 1.6
+      knockbackStrength: 3
+      knockbackDuration: 0.3
+      knockbackDirection: 0
+    swingVfx:
+      enabled: 1
+      localPosition: {x: 0, y: 0}
+      localRotation: 0
+      effectSize: {x: 11, y: 11}
+      arcAngle: 200
+      centerAngle: 0
+      radius: 0.66
+      thickness: 0.16
+      taperPower: 1.4
+      edgeSoftness: 0.03
+      reverse: 0
+      outerColor: {r: 1, g: 0.08, b: 0.01, a: 0.35}
+      mainColor: {r: 1, g: 0.25, b: 0.03, a: 1}
+      coreColor: {r: 4, g: 1.2, b: 0.25, a: 1}
+      revealDuration: 0.11
+      holdDuration: 0.04
+      fadeDuration: 0.2
+      minimumMotionSpeed: 1
+      maximumMotionSpeed: 25
+      maximumBlurLength: 0.14
+      motionResponseSpeed: 24
+      useAfterimages: 1
+      afterimageInterval: 0.03
+      afterimageMinimumDistance: 0.08
+      afterimageLifetime: 0.14
+      afterimageOpacity: 0.4
+  weaponSkills: []

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1ca7fdfbe82ab4881bb5834eee1316, type: 3}
+  m_Name: Meta_ArmorBreaker
+  m_EditorClassIdentifier: Assembly-CSharp::MetaUpgradeNode
+  id: armor_breaker
+  displayName: "\uAD00\uD1B5 \uCC9C\uACF5\uAE30"
+  description: "\uB450\uAEBC\uC6B4 \uC7A5\uAC11\uC744 \uB6AB\uACE0 \uB4E4\uC5B4\uAC04\uB2E4."
+  grade: 3
+  order: 100
+  maxLevel: 3
+  baseCost: 90
+  costGrowth: 70
+  requirements:
+  - {fileID: 11400000, guid: c082454d0ae8ee44885c23cbae6402fa, type: 2}
+  effects:
+  - kind: 0
+    stat: 2
+    valuePerLevel: 0.06

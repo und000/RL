@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1ca7fdfbe82ab4881bb5834eee1316, type: 3}
+  m_Name: Meta_ReserveFunds
+  m_EditorClassIdentifier: Assembly-CSharp::MetaUpgradeNode
+  id: reserve_funds
+  displayName: "\uC608\uBE44 \uC790\uAE08"
+  description: "\uCD9C\uBC1C\uD560 \uB54C \uD06C\uB808\uB527\uC744 \uC870\uAE08 \uC950\uACE0
+    \uB098\uAC04\uB2E4."
+  grade: 0
+  order: 40
+  maxLevel: 4
+  baseCost: 30
+  costGrowth: 20
+  requirements: []
+  effects:
+  - kind: 1
+    stat: 0
+    valuePerLevel: 40

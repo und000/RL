@@ -5,6 +5,14 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class EnemySpawner : MonoBehaviour
 {
+    [Header("진행 방식")]
+    [Tooltip("켜면 시간 기반 자동 스폰과 타이머 보스를 끄고, 방(RoomInstance)이 " +
+        "요청할 때만 적을 생성한다. 로그라이크 구성에서는 켜 둔다.")]
+    [SerializeField] private bool roomDrivenMode = true;
+    [Tooltip("방 기반 진행일 때 AI가 살아 있는 최소 거리. 방 대각선보다 커야 " +
+        "방 반대편 적이 멈춰 서지 않는다.")]
+    [SerializeField, Min(1f)] private float roomAiDistance = 70f;
+
     [Header("스폰 데이터")]
     [Tooltip("현재 활성 SpawnZone에 별도 테이블이 없을 때 사용하는 기본 소환 테이블입니다.")]
     [SerializeField] private EnemySpawnTable defaultSpawnTable;
@@ -67,6 +75,10 @@ public class EnemySpawner : MonoBehaviour
     private void Update()
     {
         elapsedTime += Time.deltaTime;
+
+        // 방 기반 진행에서는 방이 스폰을 주도하므로 시간 기반 로직을 돌리지 않는다.
+        if (roomDrivenMode) return;
+
         TrySpawnBoss();
         spawnTimer -= Time.deltaTime;
         if (spawnTimer > 0f || activeEnemyCount >= maxActiveEnemies)
@@ -151,7 +163,24 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
-    private void Acquire(GameObject prefab, Vector2 position)
+    /// <summary>방(RoomInstance)이 특정 위치에 적 하나를 요청할 때 쓴다.</summary>
+    public EnemyHealth SpawnForRoom(GameObject prefab, Vector2 position) =>
+        SpawnForRoom(prefab, position, EnemyScaling.None);
+
+    /// <summary>층 난이도 보정을 걸어 적 하나를 생성한다.</summary>
+    public EnemyHealth SpawnForRoom(
+        GameObject prefab, Vector2 position, EnemyScaling scaling)
+    {
+        if (prefab == null) return null;
+        PooledEnemy member = Acquire(prefab, position, scaling);
+        return member != null ? member.GetComponent<EnemyHealth>() : null;
+    }
+
+    private PooledEnemy Acquire(GameObject prefab, Vector2 position) =>
+        Acquire(prefab, position, EnemyScaling.None);
+
+    private PooledEnemy Acquire(
+        GameObject prefab, Vector2 position, EnemyScaling scaling)
     {
         if (!pools.TryGetValue(prefab, out Queue<PooledEnemy> pool))
         {
@@ -171,12 +200,23 @@ public class EnemySpawner : MonoBehaviour
             member = enemyObject.AddComponent<PooledEnemy>();
             member.Initialize(this, prefab);
             EnemyActivationAgent activation = enemyObject.AddComponent<EnemyActivationAgent>();
-            activation.Initialize(member, player, reducedAiDistance,
-                poolReturnDistance, activationCheckInterval);
+            // 방 기반 진행에서는 거리로 풀에 회수해 버리면 그 방이 영원히 클리어되지 않는다.
+            // 회수는 사실상 끄고, AI 감속 거리도 방 대각선을 덮도록 넉넉히 잡는다.
+            float returnDistance = roomDrivenMode ? 100000f : poolReturnDistance;
+            float aiDistance = roomDrivenMode
+                ? Mathf.Max(reducedAiDistance, roomAiDistance)
+                : reducedAiDistance;
+            activation.Initialize(member, player, aiDistance,
+                returnDistance, activationCheckInterval);
         }
 
         member.transform.SetParent(null, false);
         member.transform.position = position;
+        // 활성화 순간 OnEnable이 체력을 되돌리므로, 보정은 그 전에 걸어야 한다.
+        if (member.TryGetComponent(out EnemyHealth health))
+        {
+            health.ApplyScaling(scaling);
+        }
         if (member.TryGetComponent(out ScenePlacedEnemy scenePlacedEnemy))
         {
             scenePlacedEnemy.MarkSpawnerManaged();
@@ -188,6 +228,7 @@ public class EnemySpawner : MonoBehaviour
             lifecycleVisual.PlaySpawn(IsInsideCamera(position));
         }
         activeEnemyCount++;
+        return member;
     }
 
     public void Release(PooledEnemy member)

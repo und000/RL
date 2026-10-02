@@ -1,0 +1,687 @@
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+/// <summary>
+/// 코어 보드 편집 화면. Tab으로 열고 닫으며, 트레이의 칩을 보드로 끌어다 꽂는다.
+/// 드래그 중에는 모델을 건드리지 않고 미리보기만 움직이다가, 놓는 순간 한 번만 반영한다.
+/// </summary>
+[DisallowMultipleComponent]
+[RequireComponent(typeof(RectTransform))]
+[AddComponentMenu("Core Board/Core Board View")]
+public class CoreBoardView : MonoBehaviour
+{
+    [Header("연결")]
+    [Tooltip("비워 두면 씬에서 찾는다.")]
+    [SerializeField] private CoreBoardController board;
+    [SerializeField] private ChipInventory inventory;
+    [Tooltip("전투 중 편집을 막기 위해 참조한다. 없으면 항상 편집할 수 있다.")]
+    [SerializeField] private RunManager runManager;
+
+    [Header("열고 닫기")]
+    [SerializeField] private Key toggleKey = Key.Tab;
+    [SerializeField] private bool openOnStart;
+    [Tooltip("칩을 회전시키는 키.")]
+    [SerializeField] private Key rotateKey = Key.R;
+
+    [Header("크기")]
+    [SerializeField, Min(16f)] private float cellSize = 48f;
+    [SerializeField] private Vector2 windowPadding = new Vector2(28f, 24f);
+    [SerializeField, Min(40f)] private float trayHeight = 120f;
+
+    [Header("색 - 창")]
+    [SerializeField] private Color screenDimColor = new Color(0f, 0f, 0f, 0.65f);
+    [SerializeField] private Color windowColor = new Color(0.05f, 0.07f, 0.11f, 0.98f);
+    [SerializeField] private Color trayColor = new Color(0.09f, 0.12f, 0.17f, 0.95f);
+
+    [Header("색 - 보드 칸")]
+    [SerializeField] private Color emptyCellColor = new Color(0.16f, 0.19f, 0.25f, 1f);
+    [SerializeField] private Color blockedCellColor = new Color(0.07f, 0.07f, 0.08f, 1f);
+    [SerializeField] private Color powerRailColor = new Color(0.95f, 0.8f, 0.25f, 1f);
+    [SerializeField] private Color heatSinkColor = new Color(0.25f, 0.55f, 0.75f, 1f);
+    [SerializeField] private Color busCellColor = new Color(0.22f, 0.3f, 0.4f, 1f);
+
+    [Header("색 - 칩")]
+    [SerializeField] private Color sourceChipColor = new Color(0.95f, 0.78f, 0.3f, 1f);
+    [SerializeField] private Color amplifierChipColor = new Color(0.45f, 0.7f, 0.95f, 1f);
+    [SerializeField] private Color terminalChipColor = new Color(0.95f, 0.45f, 0.45f, 1f);
+    [SerializeField] private Color junctionChipColor = new Color(0.7f, 0.55f, 0.9f, 1f);
+    [SerializeField] private Color passiveChipColor = new Color(0.6f, 0.65f, 0.7f, 1f);
+    [Tooltip("전류가 닿지 않은 칩은 이 색으로 죽는다.")]
+    [SerializeField] private Color deadChipColor = new Color(0.28f, 0.3f, 0.33f, 1f);
+    [Tooltip("국소 과열로 스스로 멈춘 칩.")]
+    [SerializeField] private Color overheatedChipColor = new Color(0.62f, 0.24f, 0.22f, 1f);
+    [Tooltip("전역 과열 스로틀링으로 잠시 꺼진 칩.")]
+    [SerializeField] private Color throttledChipColor = new Color(0.7f, 0.45f, 0.2f, 1f);
+
+    [Header("색 - 히트맵")]
+    [Tooltip("국소 발열이 한계의 절반쯤일 때 칸에 깔리는 색.")]
+    [SerializeField] private Color heatWarmColor = new Color(0.95f, 0.6f, 0.2f, 0.35f);
+    [Tooltip("국소 한계를 넘어 그 구역이 정지한 칸의 색.")]
+    [SerializeField] private Color heatCriticalColor = new Color(1f, 0.25f, 0.2f, 0.6f);
+    [SerializeField] private Color inputPinColor = new Color(0.4f, 0.95f, 0.6f, 1f);
+    [SerializeField] private Color outputPinColor = new Color(1f, 0.65f, 0.3f, 1f);
+
+    [Header("색 - 미리보기")]
+    [SerializeField] private Color validPreviewColor = new Color(0.4f, 0.95f, 0.5f, 0.75f);
+    [SerializeField] private Color invalidPreviewColor = new Color(0.95f, 0.35f, 0.35f, 0.75f);
+
+    private readonly List<ChipView> boardChipViews = new List<ChipView>();
+    private readonly List<Vector2Int> shapeBuffer = new List<Vector2Int>(8);
+    private readonly Dictionary<Vector2Int, Image> heatOverlays =
+        new Dictionary<Vector2Int, Image>();
+    private bool needsRebuild;
+
+    private RectTransform root;
+    private RectTransform panel;
+    private RectTransform window;
+    private RectTransform boardArea;
+    private RectTransform chipLayer;
+    private RectTransform trayContent;
+    private RectTransform dragLayer;
+    private TMP_Text heatLabel;
+    private TMP_Text circuitLabel;
+    private TMP_Text hintLabel;
+    private Camera uiCamera;
+
+    private Vector2 boardPixelSize;
+    private bool isOpen;
+
+    private ChipView dragGhost;
+    private ChipView dragSource;
+    private ChipDefinition dragChip;
+    private int dragRotation;
+    private int dragFromPlacedId;
+    private bool dragOverBoard;
+    private Vector2Int dragCell;
+    private PlacementResult dragResult;
+
+    public bool IsOpen => isOpen;
+
+    /// <summary>전투 중에는 배치를 바꿀 수 없다. 열어서 보는 것은 언제나 된다.</summary>
+    public bool EditingAllowed
+    {
+        get
+        {
+            if (runManager == null || runManager.CurrentFloor == null) return true;
+            foreach (RoomInstance room in runManager.CurrentFloor.Rooms)
+            {
+                if (room != null && room.IsCombatActive) return false;
+            }
+            return true;
+        }
+    }
+
+    private void Awake()
+    {
+        root = (RectTransform)transform;
+        root.anchorMin = Vector2.zero;
+        root.anchorMax = Vector2.one;
+        root.offsetMin = Vector2.zero;
+        root.offsetMax = Vector2.zero;
+
+        Canvas canvas = GetComponentInParent<Canvas>();
+        uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+            ? canvas.worldCamera
+            : null;
+    }
+
+    private void Start()
+    {
+        if (board == null) board = FindFirstObjectByType<CoreBoardController>();
+        if (inventory == null) inventory = FindFirstObjectByType<ChipInventory>();
+        if (runManager == null) runManager = FindFirstObjectByType<RunManager>();
+
+        if (board == null || !board.IsReady)
+        {
+            Debug.LogError("CoreBoardView에 쓸 수 있는 CoreBoardController가 없습니다.", this);
+            enabled = false;
+            return;
+        }
+
+        BuildFrame();
+        board.OnBoardChanged += HandleBoardChanged;
+        board.OnLayoutChanged += HandleLayoutChanged;
+        if (inventory != null) inventory.OnInventoryChanged += RebuildTray;
+
+        RebuildAll();
+        SetOpen(openOnStart);
+    }
+
+    private void OnDestroy()
+    {
+        if (board != null)
+        {
+            board.OnBoardChanged -= HandleBoardChanged;
+            board.OnLayoutChanged -= HandleLayoutChanged;
+        }
+        if (inventory != null) inventory.OnInventoryChanged -= RebuildTray;
+    }
+
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null) return;
+
+        if (keyboard[toggleKey].wasPressedThisFrame) SetOpen(!isOpen);
+        if (isOpen && keyboard.escapeKey.wasPressedThisFrame) SetOpen(false);
+
+        // 드래그 중 회전. 미리보기만 돌려 보고 놓을 때 확정한다.
+        if (dragGhost != null && keyboard[rotateKey].wasPressedThisFrame)
+        {
+            dragRotation = BoardGeometry.NormalizeRotation(dragRotation + 1);
+            dragGhost.SetRotation(dragRotation);
+            EvaluateDragTarget();
+        }
+    }
+
+    public void SetOpen(bool open)
+    {
+        isOpen = open;
+        // 루트는 계속 살려 둬야 Update가 돌아 Tab으로 다시 열 수 있다.
+        if (panel != null) panel.gameObject.SetActive(open);
+        if (!open)
+        {
+            CancelDrag();
+            return;
+        }
+
+        if (needsRebuild) RebuildAll();
+        else RefreshLabels();
+    }
+
+    // 화면 뼈대 ---------------------------------------------------------
+
+    private void BuildFrame()
+    {
+        panel = CreateChild("Panel", root);
+        panel.anchorMin = Vector2.zero;
+        panel.anchorMax = Vector2.one;
+        panel.offsetMin = Vector2.zero;
+        panel.offsetMax = Vector2.zero;
+        CreateImage(panel, screenDimColor, true);
+
+        CoreBoardLayout layout = board.State.Layout;
+        boardPixelSize = new Vector2(layout.Width * cellSize, layout.Height * cellSize);
+
+        Vector2 windowSize = new Vector2(
+            Mathf.Max(boardPixelSize.x, 420f) + windowPadding.x * 2f,
+            boardPixelSize.y + trayHeight + windowPadding.y * 3f + 110f);
+
+        window = CreateChild("Window", panel);
+        window.sizeDelta = windowSize;
+        CreateImage(window, windowColor, true);
+
+        RectTransform title = CreateChild("Title", window);
+        title.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 30f);
+        title.anchoredPosition = new Vector2(0f, windowSize.y * 0.5f - windowPadding.y - 15f);
+        CreateLabel(title, "코어 보드", 22f, TextAlignmentOptions.Left);
+
+        heatLabel = CreateLabel(
+            CreateChild("Heat", window), string.Empty, 18f, TextAlignmentOptions.Right);
+        RectTransform heatRect = heatLabel.rectTransform;
+        heatRect.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 30f);
+        heatRect.anchoredPosition = title.anchoredPosition;
+
+        boardArea = CreateChild("BoardArea", window);
+        boardArea.sizeDelta = boardPixelSize;
+        boardArea.anchoredPosition = new Vector2(
+            0f, windowSize.y * 0.5f - windowPadding.y - 50f - boardPixelSize.y * 0.5f);
+        BuildBoardCells(layout);
+
+        chipLayer = CreateChild("ChipLayer", boardArea);
+        chipLayer.sizeDelta = boardPixelSize;
+
+        circuitLabel = CreateLabel(
+            CreateChild("Circuits", window), string.Empty, 15f, TextAlignmentOptions.TopLeft);
+        RectTransform circuitRect = circuitLabel.rectTransform;
+        circuitRect.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 56f);
+        circuitRect.anchoredPosition = new Vector2(
+            0f, boardArea.anchoredPosition.y - boardPixelSize.y * 0.5f - 32f);
+
+        RectTransform tray = CreateChild("Tray", window);
+        tray.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, trayHeight);
+        tray.anchoredPosition = new Vector2(
+            0f, -windowSize.y * 0.5f + windowPadding.y + trayHeight * 0.5f);
+        CreateImage(tray, trayColor, false);
+
+        trayContent = CreateChild("TrayContent", tray);
+        trayContent.sizeDelta = tray.sizeDelta;
+
+        hintLabel = CreateLabel(
+            CreateChild("Hint", window), string.Empty, 14f, TextAlignmentOptions.Center);
+        RectTransform hintRect = hintLabel.rectTransform;
+        hintRect.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 22f);
+        hintRect.anchoredPosition = new Vector2(
+            0f, tray.anchoredPosition.y + trayHeight * 0.5f + 14f);
+
+        dragLayer = CreateChild("DragLayer", panel);
+        dragLayer.anchorMin = Vector2.zero;
+        dragLayer.anchorMax = Vector2.one;
+        dragLayer.offsetMin = Vector2.zero;
+        dragLayer.offsetMax = Vector2.zero;
+    }
+
+    private void BuildBoardCells(CoreBoardLayout layout)
+    {
+        for (int y = 0; y < layout.Height; y++)
+        {
+            for (int x = 0; x < layout.Width; x++)
+            {
+                Vector2Int cell = new Vector2Int(x, y);
+                RectTransform slot = CreateChild("Cell_" + cell, boardArea);
+                slot.sizeDelta = Vector2.one * (cellSize - 4f);
+                slot.anchoredPosition = CellCenterLocal(cell);
+                CreateImage(slot, GetCellColor(layout.GetCell(cell)), false);
+
+                // 발열 히트맵은 칸 위에 한 겹 덮어 칩보다 아래에 깔린다.
+                RectTransform overlay = CreateChild("Heat", slot);
+                overlay.sizeDelta = slot.sizeDelta;
+                heatOverlays[cell] = CreateImage(overlay, Color.clear, false);
+            }
+        }
+    }
+
+    private Color GetCellColor(BoardCellType type)
+    {
+        switch (type)
+        {
+            case BoardCellType.Blocked: return blockedCellColor;
+            case BoardCellType.PowerRail: return powerRailColor;
+            case BoardCellType.HeatSink: return heatSinkColor;
+            case BoardCellType.Bus: return busCellColor;
+            default: return emptyCellColor;
+        }
+    }
+
+    private Vector2 CellCenterLocal(Vector2Int cell) => new Vector2(
+        (cell.x + 0.5f) * cellSize - boardPixelSize.x * 0.5f,
+        (cell.y + 0.5f) * cellSize - boardPixelSize.y * 0.5f);
+
+    // 다시 그리기 -------------------------------------------------------
+
+    /// <summary>
+    /// 전투 중 스로틀링으로도 보드가 계속 바뀌므로, 창이 닫혀 있으면 다시 그리지 않고
+    /// 표시만 밀린 것으로 두었다가 열 때 한 번에 갱신한다.
+    /// </summary>
+    private void HandleBoardChanged(CoreBoardStats stats)
+    {
+        if (!isOpen)
+        {
+            needsRebuild = true;
+            return;
+        }
+        RebuildAll();
+    }
+
+    /// <summary>
+    /// 보드가 넓어지면 칸 수와 창 크기가 통째로 달라지므로 화면을 새로 짓는다.
+    /// 런 한 번에 몇 차례뿐이라 비용은 문제되지 않는다.
+    /// </summary>
+    private void HandleLayoutChanged()
+    {
+        bool wasOpen = isOpen;
+        CancelDrag();
+
+        if (panel != null) DetachAndDestroy(panel);
+        heatOverlays.Clear();
+        boardChipViews.Clear();
+
+        BuildFrame();
+        RebuildAll();
+        SetOpen(wasOpen);
+    }
+
+    private void RebuildAll()
+    {
+        needsRebuild = false;
+        RebuildBoardChips();
+        RebuildTray();
+        RefreshLabels();
+    }
+
+    private void RebuildBoardChips()
+    {
+        foreach (ChipView view in boardChipViews)
+        {
+            if (view != null) DetachAndDestroy(view.transform);
+        }
+        boardChipViews.Clear();
+
+        foreach (PlacedChip placed in board.State.Placements)
+        {
+            if (placed.Chip == null) continue;
+
+            ChipView view = CreateChipView(
+                chipLayer, placed.Chip, placed.Rotation, placed.Id, true,
+                ResolveChipColor(placed));
+            view.Rect.anchoredPosition = CellCenterLocal(placed.Origin);
+            boardChipViews.Add(view);
+        }
+    }
+
+    /// <summary>왜 안 도는지가 색으로 구분돼야 한다. 과열·스로틀·무전원이 서로 다른 색이다.</summary>
+    private Color ResolveChipColor(PlacedChip placed)
+    {
+        CoreBoardState state = board.State;
+        if (state.IsThrottled(placed)) return throttledChipColor;
+        if (state.IsShutDownByHeat(placed)) return overheatedChipColor;
+        if (state.IsEnergized(placed)) return GetChipColor(placed.Chip.Category);
+        return deadChipColor;
+    }
+
+    private void RebuildTray()
+    {
+        if (trayContent == null) return;
+
+        for (int index = trayContent.childCount - 1; index >= 0; index--)
+        {
+            DetachAndDestroy(trayContent.GetChild(index));
+        }
+        if (inventory == null) return;
+
+        float slot = cellSize * 2.4f;
+        float startX = -trayContent.sizeDelta.x * 0.5f + slot * 0.5f + 12f;
+        float startY = trayContent.sizeDelta.y * 0.5f - slot * 0.5f - 8f;
+        int perRow = Mathf.Max(1, Mathf.FloorToInt((trayContent.sizeDelta.x - 24f) / slot));
+
+        for (int index = 0; index < inventory.Chips.Count; index++)
+        {
+            ChipDefinition chip = inventory.Chips[index];
+            if (chip == null) continue;
+
+            ChipView view = CreateChipView(
+                trayContent, chip, 0, 0, true, GetChipColor(chip.Category));
+            view.Rect.anchoredPosition = new Vector2(
+                startX + index % perRow * slot,
+                startY - index / perRow * slot) + ShapeCenterOffset(chip, 0);
+        }
+    }
+
+    /// <summary>칩 모양의 무게중심을 기준점으로 되돌리는 보정. 트레이에서 가운데 맞출 때 쓴다.</summary>
+    private Vector2 ShapeCenterOffset(ChipDefinition chip, int rotation)
+    {
+        chip.GetRotatedCells(rotation, shapeBuffer);
+        if (shapeBuffer.Count == 0) return Vector2.zero;
+
+        Vector2Int minimum = shapeBuffer[0];
+        Vector2Int maximum = shapeBuffer[0];
+        foreach (Vector2Int cell in shapeBuffer)
+        {
+            minimum = Vector2Int.Min(minimum, cell);
+            maximum = Vector2Int.Max(maximum, cell);
+        }
+        Vector2 center = (Vector2)(minimum + maximum) * 0.5f;
+        return -center * cellSize;
+    }
+
+    private ChipView CreateChipView(
+        RectTransform parent,
+        ChipDefinition chip,
+        int rotation,
+        int placedId,
+        bool interactive,
+        Color color)
+    {
+        RectTransform rect = CreateChild("Chip_" + chip.name, parent);
+        ChipView view = rect.gameObject.AddComponent<ChipView>();
+        view.Bind(
+            this, chip, rotation, placedId, cellSize, interactive,
+            color * chip.TintColor, inputPinColor, outputPinColor);
+        return view;
+    }
+
+    private Color GetChipColor(ChipCategory category)
+    {
+        switch (category)
+        {
+            case ChipCategory.Source: return sourceChipColor;
+            case ChipCategory.Amplifier: return amplifierChipColor;
+            case ChipCategory.Terminal: return terminalChipColor;
+            case ChipCategory.Junction: return junctionChipColor;
+            default: return passiveChipColor;
+        }
+    }
+
+    private void RefreshLabels()
+    {
+        RefreshHeatMap();
+
+        if (heatLabel != null)
+        {
+            CoreBoardState state = board.State;
+            string overclockMark = state.OverclockActive ? "  오버클럭 ON" : string.Empty;
+            heatLabel.text = $"발열 {state.TotalHeat} / {state.HeatCapacity}{overclockMark}";
+            heatLabel.color = state.IsOverheated
+                ? new Color(1f, 0.4f, 0.35f)
+                : new Color(0.75f, 0.85f, 0.95f);
+        }
+
+        if (circuitLabel != null)
+        {
+            List<ResolvedCircuit> circuits = board.State.Solution.Circuits;
+            if (circuits.Count == 0)
+            {
+                circuitLabel.text = "이어진 회로 없음";
+            }
+            else
+            {
+                System.Text.StringBuilder builder = new System.Text.StringBuilder();
+                foreach (ResolvedCircuit circuit in circuits)
+                {
+                    if (builder.Length > 0) builder.Append('\n');
+                    builder.Append(circuit.Describe());
+                    if (circuit.UniformFamily) builder.Append("  [계열 통일]");
+                }
+                circuitLabel.text = builder.ToString();
+            }
+        }
+
+        if (hintLabel != null)
+        {
+            hintLabel.text = EditingAllowed
+                ? "드래그로 배치 · R 회전 · 우클릭으로 빼기 · Q 오버클럭"
+                : "전투 중에는 배치를 바꿀 수 없습니다";
+            hintLabel.color = EditingAllowed
+                ? new Color(0.55f, 0.62f, 0.7f)
+                : new Color(1f, 0.55f, 0.4f);
+        }
+    }
+
+    /// <summary>
+    /// 칸마다 3x3 국소 발열을 색으로 깐다. 한계를 넘은 칸은 빨갛게 굳고,
+    /// 그 위의 칩이 왜 멈췄는지 배치만 보고도 읽히게 한다.
+    /// </summary>
+    private void RefreshHeatMap()
+    {
+        CoreBoardState state = board.State;
+        float limit = Mathf.Max(0.01f, state.Layout.LocalHeatLimit);
+
+        foreach (KeyValuePair<Vector2Int, Image> pair in heatOverlays)
+        {
+            float ratio = state.GetLocalHeat(pair.Key) / limit;
+            Color color;
+
+            if (ratio > 1f) color = heatCriticalColor;
+            else if (ratio <= 0f) color = Color.clear;
+            else color = Color.Lerp(Color.clear, heatWarmColor, ratio);
+
+            pair.Value.color = color;
+        }
+    }
+
+    // 드래그 ------------------------------------------------------------
+
+    internal void BeginDrag(ChipView source, PointerEventData eventData)
+    {
+        if (!EditingAllowed || source == null || source.Chip == null) return;
+
+        dragSource = source;
+        dragChip = source.Chip;
+        dragRotation = source.Rotation;
+        dragFromPlacedId = source.PlacedId;
+
+        // 원본은 지우지 않고 흐리게만 둔다. 지우면 드래그 이벤트가 끊긴다.
+        source.SetTint(new Color(1f, 1f, 1f, 0.25f));
+
+        RectTransform ghostRect = CreateChild("Ghost", dragLayer);
+        dragGhost = ghostRect.gameObject.AddComponent<ChipView>();
+        dragGhost.Bind(
+            this, dragChip, dragRotation, 0, cellSize, false,
+            validPreviewColor, inputPinColor, outputPinColor);
+
+        UpdateDrag(eventData);
+    }
+
+    internal void UpdateDrag(PointerEventData eventData)
+    {
+        if (dragGhost == null) return;
+
+        dragOverBoard = TryGetCellUnderPointer(eventData, out dragCell);
+        if (dragOverBoard)
+        {
+            dragGhost.Rect.position = boardArea.TransformPoint(CellCenterLocal(dragCell));
+        }
+        else if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+            dragLayer, eventData.position, uiCamera, out Vector3 world))
+        {
+            dragGhost.Rect.position = world;
+        }
+
+        EvaluateDragTarget();
+    }
+
+    /// <summary>지금 놓으면 되는지 다시 판정해 미리보기 색과 안내 문구를 갱신한다.</summary>
+    private void EvaluateDragTarget()
+    {
+        if (dragGhost == null) return;
+
+        if (!dragOverBoard)
+        {
+            dragResult = PlacementResult.Fail(PlacementError.OutOfBoard, Vector2Int.zero);
+            // 보드 밖은 "트레이로 빼기"라서 꽂힌 칩에게는 유효한 동작이다.
+            dragGhost.SetTint(dragFromPlacedId != 0 ? validPreviewColor : invalidPreviewColor);
+            if (hintLabel != null && dragFromPlacedId != 0) hintLabel.text = "놓으면 트레이로 뺍니다";
+            return;
+        }
+
+        dragResult = board.State.CanPlace(dragChip, dragCell, dragRotation, dragFromPlacedId);
+        dragGhost.SetTint(dragResult.IsValid ? validPreviewColor : invalidPreviewColor);
+        if (hintLabel != null) hintLabel.text = dragResult.Describe();
+    }
+
+    internal void EndDrag(PointerEventData eventData)
+    {
+        if (dragGhost == null) return;
+
+        ChipDefinition chip = dragChip;
+        int placedId = dragFromPlacedId;
+        bool overBoard = dragOverBoard;
+        Vector2Int cell = dragCell;
+        int rotation = dragRotation;
+        bool valid = dragResult.IsValid;
+
+        CancelDrag();
+
+        if (overBoard && valid)
+        {
+            if (placedId != 0) board.TryMove(placedId, cell, rotation);
+            else if (board.TryPlace(chip, cell, rotation) && inventory != null)
+            {
+                inventory.Remove(chip);
+            }
+        }
+        else if (!overBoard && placedId != 0)
+        {
+            // 보드 밖에 놓으면 트레이로 되돌린다.
+            if (board.Remove(placedId) && inventory != null) inventory.Add(chip);
+        }
+
+        RebuildAll();
+    }
+
+    /// <summary>보드에 꽂힌 칩을 우클릭으로 바로 빼낸다.</summary>
+    internal void RemoveToTray(ChipView view)
+    {
+        if (!EditingAllowed || view == null || view.PlacedId == 0) return;
+
+        ChipDefinition chip = view.Chip;
+        if (board.Remove(view.PlacedId) && inventory != null) inventory.Add(chip);
+    }
+
+    private void CancelDrag()
+    {
+        if (dragGhost != null) Destroy(dragGhost.gameObject);
+        if (dragSource != null) dragSource.ResetTint();
+
+        dragGhost = null;
+        dragSource = null;
+        dragChip = null;
+        dragFromPlacedId = 0;
+        dragOverBoard = false;
+    }
+
+    private bool TryGetCellUnderPointer(PointerEventData eventData, out Vector2Int cell)
+    {
+        cell = Vector2Int.zero;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            boardArea, eventData.position, uiCamera, out Vector2 local))
+        {
+            return false;
+        }
+
+        Vector2 fromCorner = local + boardPixelSize * 0.5f;
+        cell = new Vector2Int(
+            Mathf.FloorToInt(fromCorner.x / cellSize),
+            Mathf.FloorToInt(fromCorner.y / cellSize));
+        return board.State.Layout.Contains(cell);
+    }
+
+    // 만들기 도우미 -----------------------------------------------------
+
+    /// <summary>
+    /// Destroy는 프레임 끝에야 처리되므로, 낡은 뷰가 그 사이 포인터 이벤트를 받거나
+    /// 자식 수를 헷갈리게 만든다. 부모에서 먼저 떼어내고 없앤다.
+    /// </summary>
+    internal static void DetachAndDestroy(Transform target)
+    {
+        if (target == null) return;
+        target.SetParent(null, false);
+        Destroy(target.gameObject);
+    }
+
+    private static RectTransform CreateChild(string childName, RectTransform parent)
+    {
+        GameObject child = new GameObject(childName, typeof(RectTransform));
+        RectTransform rect = (RectTransform)child.transform;
+        rect.SetParent(parent, false);
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        return rect;
+    }
+
+    private static Image CreateImage(RectTransform target, Color color, bool blockRaycast)
+    {
+        Image image = target.gameObject.AddComponent<Image>();
+        image.color = color;
+        image.raycastTarget = blockRaycast;
+        return image;
+    }
+
+    private static TMP_Text CreateLabel(
+        RectTransform target, string text, float size, TextAlignmentOptions alignment)
+    {
+        TextMeshProUGUI label = target.gameObject.AddComponent<TextMeshProUGUI>();
+        label.text = text;
+        label.fontSize = size;
+        label.alignment = alignment;
+        label.raycastTarget = false;
+        label.color = new Color(0.85f, 0.9f, 0.95f);
+        return label;
+    }
+}

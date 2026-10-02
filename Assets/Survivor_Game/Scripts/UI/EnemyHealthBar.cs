@@ -31,20 +31,30 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void OnDisable()
     {
-        if (activeView != null && EnemyHealthBarManager.Instance != null &&
-            activeView.IsTracking(targetHealth) &&
-            !activeView.IsHoldingDeathDisplayFor(targetHealth))
+        if (activeView != null)
         {
-            EnemyHealthBarManager.Instance.Release(activeView, healthBarType);
+            EnemyHealthBarManager manager = EnemyHealthBarManager.Instance;
+            if (manager != null &&
+                activeView.IsTracking(targetHealth) &&
+                !activeView.IsHoldingDeathDisplayFor(targetHealth))
+            {
+                manager.Release(activeView, healthBarType);
+            }
         }
         activeView = null;
     }
 
     private void Register()
     {
-        if (EnemyHealthBarManager.Instance == null)
+        EnemyHealthBarManager manager = EnemyHealthBarManager.Instance;
+        if (manager == null)
         {
-            Debug.LogError("씬에 EnemyHealthBarManager가 없습니다.");
+            // 플레이 종료·씬 언로드 중에는 매니저가 이미 사라졌을 수 있다.
+            // 그때는 진짜 설정 누락이 아니므로 조용히 넘어간다.
+            if (gameObject.scene.isLoaded)
+            {
+                Debug.LogError("씬에 EnemyHealthBarManager가 없습니다.", this);
+            }
             return;
         }
 
@@ -56,7 +66,7 @@ public class EnemyHealthBar : MonoBehaviour
         float resolvedDuration = profile != null
             ? profile.HealthBarVisibleDuration : visibleDuration;
         healthBarType = resolvedType;
-        activeView = EnemyHealthBarManager.Instance.Register(
+        activeView = manager.Register(
             targetHealth,
             resolvedType,
             resolvedOffset,

@@ -20,6 +20,8 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField] private Animator swingAnimator;
+    [SerializeField] private Transform swingVfxRoot;
+    [SerializeField] private Transform swingVfxMotionPoint;
 
     [Header("Hitbox Groups")]
     [Tooltip("IDs must match Hitbox Group ID values in the weapon profile.")]
@@ -32,6 +34,7 @@ public class MeleeWeaponAttack : MonoBehaviour
         new List<HashSet<EnemyHealth>>();
     private WeaponAimController aimController;
     private PlayerCombatStats combatStats;
+    private PlayerEnergy playerEnergy;
     private ContactFilter2D enemyFilter;
     private float stepElapsed;
     private float nextAttackTime;
@@ -42,6 +45,11 @@ public class MeleeWeaponAttack : MonoBehaviour
     private bool animatorStarted;
     private bool externalActionLocked;
     private bool queuedNextAttack;
+    private bool heavyAttackActive;
+    // 콤보로 다음 공격이 시작돼도 이전 궤적은 남아 자연스럽게 페이드된다.
+    // 그 동안에도 취소/비활성화 시 전부 정리할 수 있게 겹치는 궤적을 모두 추적한다.
+    private readonly List<WeaponSwingVfxHandle> activeSwingVfxHandles =
+        new List<WeaponSwingVfxHandle>(4);
 
     public int AttackCount => weaponStats != null ? weaponStats.BasicAttackCount : 0;
     public int CurrentComboIndex => currentComboIndex;
@@ -54,6 +62,7 @@ public class MeleeWeaponAttack : MonoBehaviour
     {
         aimController = GetComponent<WeaponAimController>();
         combatStats = GetComponentInParent<PlayerCombatStats>();
+        playerEnergy = GetComponentInParent<PlayerEnergy>();
         if (attackOrigin == null) attackOrigin = transform;
 
         int enemyLayer = LayerMask.NameToLayer("Enemy");
@@ -68,7 +77,7 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     private void Start()
     {
-        PlayIdle();
+        PlayIdle(true);
     }
 
     private void Update()
@@ -76,7 +85,13 @@ public class MeleeWeaponAttack : MonoBehaviour
         if (externalActionLocked) return;
         Mouse mouse = Mouse.current;
         if (mouse == null || weaponStats == null) return;
-        bool pressedThisFrame = mouse.leftButton.wasPressedThisFrame;
+
+        Keyboard keyboard = Keyboard.current;
+        bool heavyModifierHeld = keyboard != null && keyboard.shiftKey.isPressed;
+        // Shift를 누른 채로 한 클릭은 강공격 전용이라 기본 콤보 버퍼에 넣지 않는다.
+        bool pressedThisFrame = mouse.leftButton.wasPressedThisFrame && !heavyModifierHeld;
+        bool heavyPressedThisFrame =
+            mouse.leftButton.wasPressedThisFrame && heavyModifierHeld;
 
         if (attacking)
         {
@@ -89,6 +104,14 @@ public class MeleeWeaponAttack : MonoBehaviour
         }
 
         if (LevelUpUI.IsPopupOpen) return;
+
+        if (heavyPressedThisFrame && weaponStats.HasHeavyAttack)
+        {
+            bufferedAttackUntil = float.NegativeInfinity;
+            BeginHeavyAttack();
+            return;
+        }
+
         if (pressedThisFrame)
         {
             bufferedAttackUntil = Time.time + weaponStats.InputBufferDuration;
@@ -119,9 +142,36 @@ public class MeleeWeaponAttack : MonoBehaviour
         if (externalActionLocked || attacking || Time.time < nextAttackTime ||
             AttackCount == 0) return;
 
+        heavyAttackActive = false;
         currentComboIndex = Mathf.Clamp(comboIndex, 0, AttackCount - 1);
-        WeaponAttackStep step = GetCurrentStep();
-        if (step == null) return;
+        BeginStep(GetCurrentStep());
+    }
+
+    /// <summary>Shift + 좌클릭 강공격. 콤보에 참여하지 않는 단독 공격이다.</summary>
+    public void BeginHeavyAttack()
+    {
+        if (weaponStats == null || externalActionLocked || attacking ||
+            Time.time < nextAttackTime || !weaponStats.HasHeavyAttack) return;
+
+        // 에너지 컴포넌트가 아예 없는 캐릭터라면 자원 제약 없이 사용한다.
+        int energyCost = weaponStats.HeavyAttackEnergyCost;
+        if (energyCost > 0 && playerEnergy != null &&
+            !playerEnergy.TryConsume(energyCost))
+        {
+            return;
+        }
+
+        heavyAttackActive = true;
+        BeginStep(weaponStats.HeavyAttack);
+    }
+
+    private void BeginStep(WeaponAttackStep step)
+    {
+        if (step == null)
+        {
+            heavyAttackActive = false;
+            return;
+        }
 
         attacking = true;
         animatorStarted = false;
@@ -248,17 +298,28 @@ public class MeleeWeaponAttack : MonoBehaviour
         aimController.EndAttack();
         lastAttackCompletedTime = Time.time;
         nextAttackTime = Time.time;
-        PlayIdle();
+
+        if (heavyAttackActive)
+        {
+            // 강공격은 콤보로 이어지지 않는다. 다음 기본 공격은 1타부터 시작한다.
+            heavyAttackActive = false;
+            queuedNextAttack = false;
+            currentComboIndex = -1;
+            bufferedAttackUntil = float.NegativeInfinity;
+            PlayIdle();
+            return;
+        }
 
         if (queuedNextAttack)
         {
             queuedNextAttack = false;
             BeginAttack(GetNextComboIndex());
+            // 콤보가 실제로 이어졌으면 Idle을 거치지 않는다.
+            if (attacking) return;
         }
-        else
-        {
-            bufferedAttackUntil = float.NegativeInfinity;
-        }
+
+        bufferedAttackUntil = float.NegativeInfinity;
+        PlayIdle();
     }
 
     private void StartAttackAnimation(WeaponAttackStep step)
@@ -270,6 +331,36 @@ public class MeleeWeaponAttack : MonoBehaviour
         swingAnimator.Play(step.animatorStateName, 0, 0f);
         swingAnimator.Update(0f);
         swingAnimator.speed = GetAnimatorPlaybackSpeed(step);
+        Transform vfxParent = swingVfxRoot != null
+            ? swingVfxRoot
+            : swingAnimator.transform.parent != null
+                ? swingAnimator.transform.parent
+                : swingAnimator.transform;
+        TrackSwingVfx(WeaponSwingVFX.SpawnAttached(
+            weaponStats.SwingVfxPrefab,
+            vfxParent,
+            swingVfxMotionPoint,
+            step.swingVfx,
+            GetAttackSpeedMultiplier()));
+    }
+
+    private void TrackSwingVfx(WeaponSwingVfxHandle handle)
+    {
+        // 이미 자연 종료된 궤적은 목록에서 걷어낸다.
+        for (int index = activeSwingVfxHandles.Count - 1; index >= 0; index--)
+        {
+            if (!activeSwingVfxHandles[index].IsActive) activeSwingVfxHandles.RemoveAt(index);
+        }
+        if (handle.IsActive) activeSwingVfxHandles.Add(handle);
+    }
+
+    private void StopAllSwingVfx()
+    {
+        for (int index = 0; index < activeSwingVfxHandles.Count; index++)
+        {
+            activeSwingVfxHandles[index].Stop();
+        }
+        activeSwingVfxHandles.Clear();
     }
 
     private float GetAnimatorPlaybackSpeed(WeaponAttackStep step)
@@ -281,13 +372,29 @@ public class MeleeWeaponAttack : MonoBehaviour
         return Mathf.Max(0.01f, clips[0].clip.length / Mathf.Max(0.05f, actualDuration));
     }
 
-    private void PlayIdle()
+    private void PlayIdle(bool immediate = false)
     {
         if (swingAnimator == null || weaponStats == null ||
             string.IsNullOrWhiteSpace(weaponStats.IdleStateName)) return;
+        // 오브젝트가 꺼지는 중이거나 컨트롤러가 이미 해제됐으면
+        // Animator 호출이 무시되고 경고만 남는다.
+        // (플레이 모드 종료, 무기 해제 시 OnDisable -> CancelAttack 경로)
+        // isInitialized까지 봐야 플레이 모드 종료 순서에서 나는 경고가 사라진다.
+        if (!swingAnimator.gameObject.activeInHierarchy ||
+            !swingAnimator.isActiveAndEnabled ||
+            !swingAnimator.isInitialized ||
+            swingAnimator.runtimeAnimatorController == null) return;
 
         swingAnimator.speed = 1f;
-        swingAnimator.Play(weaponStats.IdleStateName, 0, 0f);
+        int idleStateHash = Animator.StringToHash(weaponStats.IdleStateName);
+        float blendDuration = weaponStats.IdleReturnBlendDuration;
+        if (immediate || blendDuration <= 0f)
+        {
+            swingAnimator.Play(idleStateHash, 0, 0f);
+            return;
+        }
+
+        swingAnimator.CrossFadeInFixedTime(idleStateHash, blendDuration, 0, 0f);
     }
 
     public bool TryBeginExternalAction(bool interruptBasicAttack)
@@ -349,28 +456,35 @@ public class MeleeWeaponAttack : MonoBehaviour
         }
     }
 
-    private WeaponAttackStep GetCurrentStep() =>
-        weaponStats != null ? weaponStats.GetBasicAttackStep(currentComboIndex) : null;
+    private WeaponAttackStep GetCurrentStep()
+    {
+        if (weaponStats == null) return null;
+        return heavyAttackActive
+            ? weaponStats.HeavyAttack
+            : weaponStats.GetBasicAttackStep(currentComboIndex);
+    }
     private int GetNextComboIndex() =>
         AttackCount > 0 ? (currentComboIndex + 1) % AttackCount : 0;
     private float GetAttackSpeedMultiplier() =>
         weaponStats != null ? weaponStats.AttackSpeedMultiplier : 1f;
 
-    private void CancelAttack()
+    private void CancelAttack(bool returnToIdleImmediately = false)
     {
         attacking = false;
         animatorStarted = false;
         externalActionLocked = false;
         queuedNextAttack = false;
+        heavyAttackActive = false;
         bufferedAttackUntil = float.NegativeInfinity;
         SetAllHitboxesEnabled(false);
+        StopAllSwingVfx();
         aimController?.CancelAttack();
-        PlayIdle();
+        PlayIdle(returnToIdleImmediately);
     }
 
     private void OnDisable()
     {
-        CancelAttack();
+        CancelAttack(true);
     }
 
     private void OnValidate()

@@ -6,8 +6,14 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Survivor_Game/Scenes/Title.unity
+    guid: 23e3fa8dfd69553489af916f9272f442
+  - enabled: 1
     path: Assets/Survivor_Game/Scenes/SampleScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/Survivor_Game/Scenes/Game.unity
+    guid: 3340f4e37dc31bb4a835679dfa5f53eb
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
