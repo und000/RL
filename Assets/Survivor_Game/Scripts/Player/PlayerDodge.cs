@@ -15,8 +15,9 @@ public class PlayerDodge : MonoBehaviour
 
     [Header("회피 이동")]
     [SerializeField, Min(0.1f)] private float dodgeDistance = 4f;
-    [SerializeField, Min(0.1f)] private float dodgeSpeed = 18f;
-    [SerializeField, Min(0f)] private float dodgeCooldown = 1f;
+    [SerializeField, Min(0.1f)] private float dodgeSpeed = 30f;
+    [SerializeField, Min(0f)] private float dodgeCooldown = 0.2f;
+    public bool IsDodgeMoving { get; private set; }
 
     [Header("충돌 보정")]
     [SerializeField, Min(0f)] private float collisionSkin = 0.03f;
@@ -121,6 +122,7 @@ public class PlayerDodge : MonoBehaviour
     private IEnumerator Dodge(Vector2 direction)
     {
         isDodging = true;
+        IsDodgeMoving = true;
         playerMovement.SetSprinting(false);
         lowerbodyFacing?.BeginDash();
         nextDodgeTime = Time.time + dodgeCooldown;
@@ -153,6 +155,7 @@ public class PlayerDodge : MonoBehaviour
             yield return new WaitForFixedUpdate();
         }
 
+        IsDodgeMoving = false;
         playerHealth.SetDodgeInvulnerable(false);
         playerMovement.SetMovementLocked(false);
         yield return RestoreEnemyCollisionWhenSafe();
@@ -215,6 +218,7 @@ public class PlayerDodge : MonoBehaviour
     private void OnDisable()
     {
         StopAllCoroutines();
+        IsDodgeMoving = false;
         ResetSpaceInput();
         if (playerMovement != null)
         {

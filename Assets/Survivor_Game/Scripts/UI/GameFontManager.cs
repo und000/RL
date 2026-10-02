@@ -55,6 +55,13 @@ public class GameFontManager : MonoBehaviour
             return;
         }
 
+        gameFontAsset = Resources.Load<TMP_FontAsset>("Fonts/NanumMyeongjoTMP");
+        if (gameFontAsset != null)
+        {
+            gameFontAsset.isMultiAtlasTexturesEnabled = true;
+            return;
+        }
+
         Font sourceFont = Resources.Load<Font>(FontResourcePath);
 
         if (sourceFont == null)
@@ -64,6 +71,7 @@ public class GameFontManager : MonoBehaviour
         }
 
         gameFontAsset = TMP_FontAsset.CreateFontAsset(sourceFont);
+        gameFontAsset.isMultiAtlasTexturesEnabled = true;
         gameFontAsset.name = "NanumMyeongjo Runtime TMP Font";
     }
 
@@ -78,7 +86,11 @@ public class GameFontManager : MonoBehaviour
 
         if (gameFontAsset != null)
         {
-            targetText.font = gameFontAsset;
+            if (targetText.font != gameFontAsset)
+            {
+                targetText.font = gameFontAsset;
+                targetText.fontSharedMaterial = gameFontAsset.material;
+            }
         }
     }
 

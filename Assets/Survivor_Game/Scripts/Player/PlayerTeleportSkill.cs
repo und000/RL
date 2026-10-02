@@ -9,6 +9,8 @@ using UnityEngine.InputSystem;
 [AddComponentMenu("Player/Player Teleport Skill")]
 public class PlayerTeleportSkill : MonoBehaviour
 {
+    [Header("Legacy Input (disabled for weapon special attacks)")]
+    [SerializeField] private bool enableRightClickInput;
     [Header("순간이동 거리")]
     [SerializeField, Min(0.1f)] private float maximumDistance = 10f;
     [SerializeField, Min(0f)] private float collisionSkin = 0.05f;
@@ -97,6 +99,11 @@ public class PlayerTeleportSkill : MonoBehaviour
 
     private void Update()
     {
+        if (!enableRightClickInput)
+        {
+            if (aiming) CancelAiming();
+            return;
+        }
         Mouse mouse = Mouse.current;
         if (mouse == null) return;
 

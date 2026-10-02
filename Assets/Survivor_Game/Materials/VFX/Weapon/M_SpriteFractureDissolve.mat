@@ -38,7 +38,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _DirectionalInfluence: 1
-    - _Dissolve: 0.475
+    - _Dissolve: 0.612
     - _EdgeWidth: 0.001
     - _EnableExternalAlpha: 0
     - _HoleSoftness: 0.001

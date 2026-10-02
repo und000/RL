@@ -317,6 +317,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7170721677906927211}
     m_Modifications:
+    - target: {fileID: 3440262817053092066, guid: 6e8d544816a1c314db22eb0ce29edbf0, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 3440262817053092066, guid: 6e8d544816a1c314db22eb0ce29edbf0, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
     - target: {fileID: 3673310120567923868, guid: 6e8d544816a1c314db22eb0ce29edbf0, type: 3}
       propertyPath: m_Name
       value: UI_UpgradeScreen
@@ -434,6 +442,38 @@ PrefabInstance:
       propertyPath: upgradeScreen
       value: 
       objectReference: {fileID: 715102588776461133}
+    - target: {fileID: 832777566517092563, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 832777566517092563, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 1250933206422484346, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 1250933206422484346, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 3663049037465232699, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 3663049037465232699, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 5761667047868824303, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 5761667047868824303, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
     - target: {fileID: 6434575521677987951, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -518,6 +558,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: UI_TitleMenu
       objectReference: {fileID: 0}
+    - target: {fileID: 7280947562343417935, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 7280947562343417935, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 8715450547079872356, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
+    - target: {fileID: 8715450547079872356, guid: b8882beff418c1c4fbef6111f62d572e, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2083818696938502944, guid: 6b36a4f583754d941bc2a02de2f0be4e, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

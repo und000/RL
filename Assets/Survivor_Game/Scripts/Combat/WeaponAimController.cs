@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
+[DefaultExecutionOrder(200)]
 [AddComponentMenu("Combat/Weapon Aim Controller")]
 public class WeaponAimController : MonoBehaviour
 {
@@ -16,6 +17,9 @@ public class WeaponAimController : MonoBehaviour
     [SerializeField] private Transform aimRoot;
     [SerializeField] private Transform aimOrigin;
     [SerializeField] private Camera worldCamera;
+    [Header("Idle Render Flip")]
+    [SerializeField] private Transform idleRender;
+    [SerializeField] private Vector2 flipAngleRange = new Vector2(-120f, 20f);
 
     [Header("Attack Aim")]
     [SerializeField] private AttackAimMode attackAimMode = AttackAimMode.LockOnAttackStart;
@@ -30,12 +34,15 @@ public class WeaponAimController : MonoBehaviour
         ? Vector2.right
         : (Vector2)aimRoot.right;
     private float lockedWorldAngle;
+    private float renderYSize;
 
     private void Awake()
     {
         if (aimRoot == null) aimRoot = transform;
         if (aimOrigin == null) aimOrigin = aimRoot;
         if (worldCamera == null) worldCamera = Camera.main;
+        if (idleRender == null) idleRender = aimRoot.Find("SwingRoot/Render");
+        if (idleRender != null) renderYSize = Mathf.Abs(idleRender.localScale.y);
     }
 
     public void BeginAttack()
@@ -60,7 +67,19 @@ public class WeaponAimController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!IsAttacking) return;
+        if (!IsAttacking)
+        {
+            if (TryGetCursorAngle(out float idleAngle)) SetAimAngle(idleAngle, true);
+            if (idleRender != null)
+            {
+                float angle = Mathf.DeltaAngle(0f, aimRoot.eulerAngles.z);
+                Vector3 scale = idleRender.localScale;
+                scale.y = angle >= flipAngleRange.x - .001f && angle <= flipAngleRange.y + .001f
+                    ? -renderYSize : renderYSize;
+                idleRender.localScale = scale;
+            }
+            return;
+        }
         if (attackAimMode == AttackAimMode.LockOnAttackStart)
         {
             SetAimAngle(lockedWorldAngle, true);
