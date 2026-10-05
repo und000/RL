@@ -327,6 +327,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponEquipment
   equippedWeapon: {fileID: 11400000, guid: b0b760033f9d46219a875142a43a2fb8, type: 2}
+  startingWeapons: {fileID: 11400000, guid: 1a0e3ceb082d4d2cb3c54c53abe6b426, type: 2}
   weaponContainer: {fileID: 477550062}
 --- !u!224 &284088841 stripped
 RectTransform:
@@ -602,6 +603,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 7894000000000000010}
   - component: {fileID: 519420032}
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
@@ -942,12 +944,10 @@ GameObject:
   - component: {fileID: 859371140}
   - component: {fileID: 859371139}
   - component: {fileID: 859371143}
-  - component: {fileID: 859371144}
   - component: {fileID: 859371145}
   - component: {fileID: 859371146}
   - component: {fileID: 859371147}
   - component: {fileID: 859371148}
-  - component: {fileID: 859371149}
   - component: {fileID: 859371150}
   - component: {fileID: 859371151}
   - component: {fileID: 859371152}
@@ -1128,22 +1128,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   walkSpeed: 6
   runSpeed: 12
---- !u!114 &859371144
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 859371138}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2846fa4e8ad26324b8bdf8fd48e6d056, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AutoWeapon
-  projectilePrefab: {fileID: 7112716578222841665, guid: f62821c9ad14bdd458eff9b432926a47, type: 3}
-  attackInterval: 0.8
-  attackRange: 8
-  projectileSpeed: 8
 --- !u!114 &859371145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1211,24 +1195,6 @@ MonoBehaviour:
   flatArmorPenetration: 0
   trueDamageRate: 0
   minimumNormalDamage: 10
---- !u!114 &859371149
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 859371138}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7777777777777777777777777777777, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerLevelShockwave
-  shockwaveRadius: 7
-  shockwaveVisualPrefab: {fileID: 1003, guid: e169e8f7243a4de6a06a03603171fc8b, type: 3}
-  damage: 5
-  baseAttackKnockbackStrength: 3
-  knockbackStrengthMultiplier: 4
-  knockbackDuration: 0.35
 --- !u!114 &859371150
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1341,7 +1307,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7de29e29a229d1f49bcb05f6be813edf, type: 2}
   - {fileID: 11400000, guid: 312109286a225584c852c31171de92a3, type: 2}
   - {fileID: 11400000, guid: 0a97cd478e43a2e4fbbdec0a59b6ca00, type: 2}
-  - {fileID: 11400000, guid: e6ca7f80b691f4a458f0eb5e02df60d0, type: 2}
 --- !u!114 &859371156
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1465,8 +1430,6 @@ MonoBehaviour:
   player: {fileID: 859371142}
   floorRoot: {fileID: 0}
   floorTransitionDelay: 1.5
-  waitForBossReward: 1
-  maximumBossRewardWait: 60
 --- !u!4 &1517046261
 Transform:
   m_ObjectHideFlags: 0
@@ -1621,12 +1584,6 @@ MonoBehaviour:
     - 1.25
     - 1.5
     - 1.8
-  overclock:
-    boost: 0.4
-    heatScale: 2
-  overclockKey: 31
-  throttleInterval: 3
-  throttleDuration: 2
   inventory: {fileID: 0}
   startingChips: []
   logStatsOnChange: 1
@@ -1708,7 +1665,6 @@ MonoBehaviour:
   emptyCellColor: {r: 0.16, g: 0.19, b: 0.25, a: 1}
   blockedCellColor: {r: 0.07, g: 0.07, b: 0.08, a: 1}
   powerRailColor: {r: 0.95, g: 0.8, b: 0.25, a: 1}
-  heatSinkColor: {r: 0.25, g: 0.55, b: 0.75, a: 1}
   busCellColor: {r: 0.22, g: 0.3, b: 0.4, a: 1}
   sourceChipColor: {r: 0.95, g: 0.78, b: 0.3, a: 1}
   amplifierChipColor: {r: 0.45, g: 0.7, b: 0.95, a: 1}
@@ -1716,10 +1672,6 @@ MonoBehaviour:
   junctionChipColor: {r: 0.7, g: 0.55, b: 0.9, a: 1}
   passiveChipColor: {r: 0.6, g: 0.65, b: 0.7, a: 1}
   deadChipColor: {r: 0.28, g: 0.3, b: 0.33, a: 1}
-  overheatedChipColor: {r: 0.62, g: 0.24, b: 0.22, a: 1}
-  throttledChipColor: {r: 0.7, g: 0.45, b: 0.2, a: 1}
-  heatWarmColor: {r: 0.95, g: 0.6, b: 0.2, a: 0.35}
-  heatCriticalColor: {r: 1, g: 0.25, b: 0.2, a: 0.6}
   inputPinColor: {r: 0.4, g: 0.95, b: 0.6, a: 1}
   outputPinColor: {r: 1, g: 0.65, b: 0.3, a: 1}
   validPreviewColor: {r: 0.4, g: 0.95, b: 0.5, a: 0.75}
@@ -1979,7 +1931,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 18, y: 18}
-  m_SizeDelta: {x: 250, y: 78}
+  m_SizeDelta: {x: 250, y: 54}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &2094789415
 MonoBehaviour:
@@ -1994,21 +1946,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CoreBoardHudUI
   board: {fileID: 0}
-  panelSize: {x: 250, y: 78}
+  panelSize: {x: 250, y: 54}
   screenMargin: {x: 18, y: 18}
   barBackgroundColor: {r: 0.05, g: 0.07, b: 0.1, a: 0.85}
-  barSafeColor: {r: 0.35, g: 0.7, b: 0.9, a: 1}
-  barHotColor: {r: 0.95, g: 0.65, b: 0.25, a: 1}
-  barOverheatColor: {r: 1, g: 0.3, b: 0.28, a: 1}
-  hotThreshold: 0.75
   lampSize: 14
   lampSpacing: 6
   lampOnColor: {r: 0.45, g: 0.95, b: 0.6, a: 1}
   lampOffColor: {r: 0.22, g: 0.24, b: 0.28, a: 1}
-  lampThrottledColor: {r: 1, g: 0.35, b: 0.3, a: 1}
-  overclockIdleColor: {r: 0.4, g: 0.45, b: 0.52, a: 1}
-  overclockActiveColor: {r: 1, g: 0.75, b: 0.25, a: 1}
-  throttleFlashDuration: 0.25
 --- !u!1001 &856250391640099288
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2845,3 +2789,26 @@ SceneRoots:
   - {fileID: 1529691487}
   - {fileID: 1517046261}
   - {fileID: 1646824580}
+--- !u!114 &7894000000000000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fe4bc2bee3d4facbd936a9ab6430a95, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::StaggerImpactFeedback
+  normalSound: {fileID: 8300000, guid: 3ec5bf8adaa244e3bd368bf23bfbf6b8, type: 3}
+  majorSound: {fileID: 8300000, guid: d68af191041f4214998fbc6700f7e43c, type: 3}
+  normalVolume: 0.5
+  majorVolume: 0.95
+  normalSoundInterval: 0.05
+  impactTimeScale: 0.1
+  holdDuration: 0.3
+  recoveryDuration: 0.3
+  zoomAmount: 0.08
+  shakeStrength: 0.45
+  shakeFrequency: 38

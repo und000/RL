@@ -62,9 +62,9 @@ public class EnemySpawner : MonoBehaviour
             player = playerObject != null ? playerObject.transform : null;
         }
 
-        if (player == null || defaultSpawnTable == null)
+        if (player == null || (!roomDrivenMode && defaultSpawnTable == null))
         {
-            Debug.LogError("SpawnDirector에 Player와 Default Spawn Table이 필요합니다.", this);
+            Debug.LogError("SpawnDirector에 Player가 필요하며, 자동 스폰 모드에서는 Default Spawn Table도 필요합니다.", this);
             enabled = false;
             return;
         }
@@ -169,10 +169,10 @@ public class EnemySpawner : MonoBehaviour
 
     /// <summary>층 난이도 보정을 걸어 적 하나를 생성한다.</summary>
     public EnemyHealth SpawnForRoom(
-        GameObject prefab, Vector2 position, EnemyScaling scaling)
+        GameObject prefab, Vector2 position, EnemyScaling scaling, EnemyRank? encounterRank = null)
     {
         if (prefab == null) return null;
-        PooledEnemy member = Acquire(prefab, position, scaling);
+        PooledEnemy member = Acquire(prefab, position, scaling, encounterRank);
         return member != null ? member.GetComponent<EnemyHealth>() : null;
     }
 
@@ -180,7 +180,7 @@ public class EnemySpawner : MonoBehaviour
         Acquire(prefab, position, EnemyScaling.None);
 
     private PooledEnemy Acquire(
-        GameObject prefab, Vector2 position, EnemyScaling scaling)
+        GameObject prefab, Vector2 position, EnemyScaling scaling, EnemyRank? encounterRank = null)
     {
         if (!pools.TryGetValue(prefab, out Queue<PooledEnemy> pool))
         {
@@ -215,6 +215,10 @@ public class EnemySpawner : MonoBehaviour
         // 활성화 순간 OnEnable이 체력을 되돌리므로, 보정은 그 전에 걸어야 한다.
         if (member.TryGetComponent(out EnemyHealth health))
         {
+            // Preserve a prefab's higher rank, but promote ordinary room enemies to elite.
+            EnemyRank baseRank = health.Profile != null ? health.Profile.Rank : EnemyRank.Normal;
+            health.SetEncounterRank(encounterRank.HasValue && encounterRank.Value > baseRank
+                ? encounterRank : null);
             health.ApplyScaling(scaling);
         }
         if (member.TryGetComponent(out ScenePlacedEnemy scenePlacedEnemy))

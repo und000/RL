@@ -16,7 +16,8 @@ MonoBehaviour:
   roomCount: 7
   eliteRoomCount: 1
   treasureRoomCount: 1
-  shopRoomCount: 1
+  shopRoomCount: 0
+  keepNonCombatRoomsAwayFromStart: 1
   gridCellSize: {x: 48, y: 32}
   roomPools:
   - kind: 0
@@ -55,7 +56,6 @@ MonoBehaviour:
     creditsPerEnemy: 4
     eliteHealthMultiplier: 1.6
     bossHealthMultiplier: 1
-    bossPrefab: {fileID: 8100000000000000001, guid: d4444444444444444444444444444444, type: 3}
   rewardPlan:
     pools:
     - kind: 3
@@ -88,8 +88,6 @@ MonoBehaviour:
       - reward: {fileID: 11400000, guid: fba6fec72168e0a46a1d8afc1f6d5f33, type: 2}
         weight: 1.2
       - reward: {fileID: 11400000, guid: 856ee363ae943fa47b9046904419afd6, type: 2}
-        weight: 1.2
-      - reward: {fileID: 11400000, guid: 5f088eb4433ffbe428b0913f0e8761a1, type: 2}
         weight: 1.2
       - reward: {fileID: 11400000, guid: b859ca60782a3d840834597f3b06894f, type: 2}
         weight: 1.2
@@ -135,6 +133,30 @@ MonoBehaviour:
         weight: 0.3
       - reward: {fileID: 11400000, guid: 384543c431597ff43a6d2480da3f84e0, type: 2}
         weight: 0.8
+      - reward: {fileID: 11400000, guid: e9c5e7a01b0f4f64826d713fc1f31abe, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: b35da0dbdb2d4fa888ff2018d69c56f8, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 18407da7fdff409eab4f4b8d4e0569a1, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 4917365c4796479880c3f4c593287752, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 425a61072b314c52b41e4c87bf10b060, type: 2}
+        weight: 0.35
+      - reward: {fileID: 11400000, guid: f866c4dfb2c342b08911c0a0798aca4c, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 93bd1a84a80441e09f57801a82532134, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 036c74664e534aaca909499ce1d60e44, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 228c664b14aa4ab8a10573569687eb76, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 7ddfee47ae6547cba6de5a1f753c5dea, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: a16347c1912f4e048a44cb3ae7a49a8a, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: a8a450b4c119470b82c1deac556c8b02, type: 2}
+        weight: 1
       dropRewards: []
     - kind: 2
       choiceCount: 2
@@ -153,8 +175,6 @@ MonoBehaviour:
         weight: 1
       - reward: {fileID: 11400000, guid: b21f414c2b8ccdf48b1a8a59267adff8, type: 2}
         weight: 1
-      - reward: {fileID: 11400000, guid: bb927b101dc760a428655eb213a20469, type: 2}
-        weight: 1
       - reward: {fileID: 11400000, guid: a79e7a227e69e96489333dc79320b4ea, type: 2}
         weight: 1
       - reward: {fileID: 11400000, guid: 65b1f14b077679c46aeeff03e65119fb, type: 2}
@@ -169,6 +189,28 @@ MonoBehaviour:
         weight: 0.4
       - reward: {fileID: 11400000, guid: d74d33beebf287949aad7f88a017915a, type: 2}
         weight: 0.4
+      - reward: {fileID: 11400000, guid: e9c5e7a01b0f4f64826d713fc1f31abe, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: b35da0dbdb2d4fa888ff2018d69c56f8, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 18407da7fdff409eab4f4b8d4e0569a1, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 4917365c4796479880c3f4c593287752, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: f866c4dfb2c342b08911c0a0798aca4c, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 93bd1a84a80441e09f57801a82532134, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 036c74664e534aaca909499ce1d60e44, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 228c664b14aa4ab8a10573569687eb76, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 7ddfee47ae6547cba6de5a1f753c5dea, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: a16347c1912f4e048a44cb3ae7a49a8a, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: a8a450b4c119470b82c1deac556c8b02, type: 2}
+        weight: 1
       dropRewards: []
     - kind: 5
       choiceCount: 1
@@ -214,8 +256,6 @@ MonoBehaviour:
         weight: 1.2
       - reward: {fileID: 11400000, guid: 856ee363ae943fa47b9046904419afd6, type: 2}
         weight: 1.2
-      - reward: {fileID: 11400000, guid: 5f088eb4433ffbe428b0913f0e8761a1, type: 2}
-        weight: 1.2
       - reward: {fileID: 11400000, guid: b859ca60782a3d840834597f3b06894f, type: 2}
         weight: 1.2
       - reward: {fileID: 11400000, guid: 65b1f14b077679c46aeeff03e65119fb, type: 2}
@@ -235,8 +275,6 @@ MonoBehaviour:
       - reward: {fileID: 11400000, guid: 8095af037b5a23241a77427b2516bac0, type: 2}
         weight: 0.8
       - reward: {fileID: 11400000, guid: b21f414c2b8ccdf48b1a8a59267adff8, type: 2}
-        weight: 0.8
-      - reward: {fileID: 11400000, guid: bb927b101dc760a428655eb213a20469, type: 2}
         weight: 0.8
       - reward: {fileID: 11400000, guid: a79e7a227e69e96489333dc79320b4ea, type: 2}
         weight: 0.8
@@ -270,4 +308,26 @@ MonoBehaviour:
         weight: 0.42000002
       - reward: {fileID: 11400000, guid: 384543c431597ff43a6d2480da3f84e0, type: 2}
         weight: 1.12
+      - reward: {fileID: 11400000, guid: e9c5e7a01b0f4f64826d713fc1f31abe, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: b35da0dbdb2d4fa888ff2018d69c56f8, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 18407da7fdff409eab4f4b8d4e0569a1, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 4917365c4796479880c3f4c593287752, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: f866c4dfb2c342b08911c0a0798aca4c, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 93bd1a84a80441e09f57801a82532134, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 036c74664e534aaca909499ce1d60e44, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 228c664b14aa4ab8a10573569687eb76, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: 7ddfee47ae6547cba6de5a1f753c5dea, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: a16347c1912f4e048a44cb3ae7a49a8a, type: 2}
+        weight: 1
+      - reward: {fileID: 11400000, guid: a8a450b4c119470b82c1deac556c8b02, type: 2}
+        weight: 1
       dropRewards: []

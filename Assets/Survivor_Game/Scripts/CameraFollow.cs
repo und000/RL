@@ -70,6 +70,16 @@ public class CameraFollow : MonoBehaviour
         }
     }
 
+    /// <summary>검은 로딩 화면 안에서 새 스테이지 시작점으로 즉시 맞춘다.</summary>
+    public void SnapToTarget()
+    {
+        if (target == null) return;
+        usePointerFocus = false;
+        pointerFocusSnapped = false;
+        velocity = Vector3.zero;
+        transform.position = new Vector3(target.position.x, target.position.y, transform.position.z);
+    }
+
     public void SetPointerFocus(Vector2 worldPosition, bool enabled)
     {
         bool enteringPointerFocus = enabled && !usePointerFocus;

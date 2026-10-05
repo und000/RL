@@ -1,9 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// 코어 보드가 계산한 스탯을 플레이어 컴포넌트에 실제로 반영한다.
+/// 코어 보드·장비·영구 개조 스탯을 플레이어 컴포넌트에 실제로 반영한다.
 /// 인스펙터에 적힌 값을 기준값으로 한 번 기억해 두고, 배치가 바뀔 때마다
-/// "기준값 + 보드 보너스"를 통째로 다시 써 주므로 값이 누적되지 않는다.
+/// "기준값 + 전체 보너스"를 통째로 다시 써 주므로 값이 누적되지 않는다.
 /// </summary>
 [DisallowMultipleComponent]
 [AddComponentMenu("Core Board/Core Board Stat Applier")]
@@ -36,10 +36,7 @@ public class CoreBoardStatApplier : MonoBehaviour
     private CoreBoardStats latestBoardStats;
     private CoreBoardStats latestGear;
 
-    /// <summary>
-    /// 보드가 모아 준 쿨다운 감소율. 스킬 쪽에 아직 연결하지 않았으므로
-    /// 값만 들고 있는다. 3단계에서 스킬 컨트롤러가 여기서 읽어 가면 된다.
-    /// </summary>
+    /// <summary>텔레포트 등 재사용 대기시간이 있는 기능에 적용하는 감소율.</summary>
     public float CooldownReductionRate { get; private set; }
 
     private void Awake()
@@ -55,17 +52,10 @@ public class CoreBoardStatApplier : MonoBehaviour
     private void Start()
     {
         if (board == null) board = FindFirstObjectByType<CoreBoardController>();
-        if (board == null)
-        {
-            Debug.LogWarning("씬에 CoreBoardController가 없어 보드 스탯을 반영하지 않습니다.", this);
-            enabled = false;
-            return;
-        }
-
         CaptureBaseValues();
-        board.OnBoardChanged += Apply;
+        if (board != null) board.OnBoardChanged += Apply;
         if (equipment != null) equipment.OnEquipmentChanged += ReapplyLatest;
-        Apply(board.Stats);
+        Apply(board != null ? board.Stats : new CoreBoardStats());
     }
 
     private void OnDestroy()
@@ -133,12 +123,12 @@ public class CoreBoardStatApplier : MonoBehaviour
             pickupRange.SetPickupRange(basePickupRange + Total(ChipStatKind.PickupRange));
         }
 
-        CooldownReductionRate = Total(ChipStatKind.CooldownReductionRate);
+        CooldownReductionRate = Mathf.Clamp01(Total(ChipStatKind.CooldownReductionRate));
     }
 
     /// <summary>
     /// 보드·장비·영구 개조를 합친 값. 없는 쪽은 0으로 친다.
-    /// 세삷이 같은 항목을 쓰므로 따로 반영하면 서로 덮어쓴다.
+    /// 세 곳이 같은 항목을 쓰므로 따로 반영하면 서로 덮어쓴다.
     /// </summary>
     private float Total(ChipStatKind kind)
     {

@@ -19,6 +19,10 @@ public class TitleScreenUI : MonoBehaviour
     [SerializeField] private Button quitButton;
     [Tooltip("개조 화면. 비워 두면 개조 버튼이 꺼진다.")]
     [SerializeField] private MetaUpgradeScreen upgradeScreen;
+    [Header("출발 무기")]
+    [SerializeField] private StartingWeaponCatalog startingWeapons;
+    [SerializeField] private StartingWeaponSelectionUI weaponSelectionPrefab;
+    private StartingWeaponSelectionUI weaponSelection;
 
     [Header("이동")]
     [Tooltip("시작을 누르면 불러올 씬. Build Settings에 들어 있어야 한다.")]
@@ -64,6 +68,7 @@ public class TitleScreenUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (weaponSelection != null) Destroy(weaponSelection.gameObject);
         if (startButton != null) startButton.onClick.RemoveListener(StartRun);
         if (quitButton != null) quitButton.onClick.RemoveListener(Quit);
         if (upgradeButton != null) upgradeButton.onClick.RemoveListener(OpenUpgrade);
@@ -86,6 +91,18 @@ public class TitleScreenUI : MonoBehaviour
             return;
         }
 
+        if (startingWeapons == null || !startingWeapons.IsValid || weaponSelectionPrefab == null ||
+            !weaponSelectionPrefab.IsConfigured)
+        {
+            Debug.LogError("출발 무기 6종과 무기 선택 화면을 연결해야 합니다.", this);
+            return;
+        }
+        if (weaponSelection == null) weaponSelection = Instantiate(weaponSelectionPrefab);
+        weaponSelection.Show(startingWeapons, LoadRun);
+    }
+
+    private void LoadRun()
+    {
         Time.timeScale = 1f;
         SceneManager.LoadScene(gameSceneName);
     }

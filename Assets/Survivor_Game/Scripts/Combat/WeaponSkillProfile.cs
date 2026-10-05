@@ -27,6 +27,20 @@ public class WeaponSkillProfile : ScriptableObject
     [SerializeField] private string skillId = "Skill_New";
     [SerializeField] private string displayName = "New Skill";
 
+    [Header("Equippable Special Attack")]
+    [SerializeField] private bool equippableSpecialAttack;
+    [SerializeField] private Sprite icon;
+    [SerializeField, TextArea] private string description;
+    [Tooltip("사용 가능한 무기군을 여러 개 선택합니다. Everything은 제한 없음, Nothing은 사용 불가입니다. 전용 기술에도 적용됩니다.")]
+    [SerializeField] private WeaponFamily allowedWeaponFamilies = WeaponFamily.All;
+    [Tooltip("Set for a unique weapon's bound skill. It can never become a transferable item.")]
+    [SerializeField] private WeaponStatsProfile exclusiveWeapon;
+    [SerializeField, Min(1)] private int mpCost = 5;
+    [SerializeField] private AnimationClip specialAttackClip;
+    [SerializeField] private WeaponAttackStep specialAttack = new WeaponAttackStep { animatorStateName = "SpecialAttack" };
+    [Tooltip("Optional special-attack trail. Empty uses the weapon's trail prefab.")]
+    [SerializeField] private WeaponSwingVFX specialAttackVfx;
+
     [Header("Timing")]
     [SerializeField, Min(0f)] private float cooldown = 1f;
     [SerializeField, Min(0f)] private float recoveryDuration = 0.15f;
@@ -40,6 +54,27 @@ public class WeaponSkillProfile : ScriptableObject
         new WeaponSkillMotionStep()
     };
 
+    public WeaponFamily AllowedWeaponFamilies => allowedWeaponFamilies;
+    public string AllowedWeaponFamiliesLabel => WeaponFamilyUtility.Label(allowedWeaponFamilies);
+    public WeaponStatsProfile ExclusiveWeapon => exclusiveWeapon;
+    public bool IsEquippableSpecialAttack => equippableSpecialAttack;
+    public bool IsTransferable => equippableSpecialAttack && exclusiveWeapon == null;
+    public Sprite Icon => icon;
+    public string Description => description;
+    public int MpCost => Mathf.Max(1, mpCost);
+    public AnimationClip SpecialAttackClip => specialAttackClip;
+    public WeaponAttackStep SpecialAttack => equippableSpecialAttack ? specialAttack : null;
+    public WeaponSwingVFX SpecialAttackVfx => specialAttackVfx;
+
+    public bool CanUseOn(WeaponStatsProfile weapon)
+    {
+        if (!equippableSpecialAttack || weapon == null || specialAttack == null || specialAttackClip == null) return false;
+        if (!WeaponFamilyUtility.IsSingle(weapon.Family) || (allowedWeaponFamilies & weapon.Family) == 0) return false;
+        if (exclusiveWeapon != null)
+            return exclusiveWeapon == weapon && weapon.LockSpecialAttack && weapon.DefaultSpecialAttack == this;
+        return true;
+    }
+
     public string SkillId => skillId;
     public string DisplayName => displayName;
     public float Cooldown => cooldown;
@@ -51,6 +86,10 @@ public class WeaponSkillProfile : ScriptableObject
 
     private void OnValidate()
     {
+        mpCost = Mathf.Max(1, mpCost);
+        if (specialAttack == null) specialAttack = new WeaponAttackStep();
+        specialAttack.animatorStateName = "SpecialAttack";
+        specialAttack.Normalize(0);
         cooldown = Mathf.Max(0f, cooldown);
         recoveryDuration = Mathf.Max(0f, recoveryDuration);
         if (animationSteps == null) animationSteps = Array.Empty<WeaponSkillMotionStep>();

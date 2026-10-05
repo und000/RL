@@ -16,18 +16,9 @@ public class CoreBoardLayout : ScriptableObject
     [Tooltip("좌하단 (0,0)부터 가로 우선 순서로 채운다. 크기가 맞지 않으면 자동으로 맞춰진다.")]
     [SerializeField] private BoardCellType[] cells = Array.Empty<BoardCellType>();
 
-    [Header("방열")]
-    [Tooltip("칩을 더 꽂지 않은 상태에서 감당할 수 있는 총 발열.")]
-    [SerializeField, Min(0)] private int baseHeatCapacity = 10;
-    [Tooltip("한 칸을 중심으로 한 3x3 범위가 견딜 수 있는 발열. " +
-        "이걸 넘으면 그 구역의 칩이 정지한다.")]
-    [SerializeField, Min(1f)] private float localHeatLimit = 8f;
-
     public int Width => width;
     public int Height => height;
     public int CellCount => width * height;
-    public int BaseHeatCapacity => baseHeatCapacity;
-    public float LocalHeatLimit => localHeatLimit;
 
     public bool Contains(Vector2Int cell) =>
         cell.x >= 0 && cell.y >= 0 && cell.x < width && cell.y < height;
@@ -103,8 +94,6 @@ public class CoreBoardLayout : ScriptableObject
     {
         width = Mathf.Max(1, width);
         height = Mathf.Max(1, height);
-        baseHeatCapacity = Mathf.Max(0, baseHeatCapacity);
-        localHeatLimit = Mathf.Max(1f, localHeatLimit);
         if (cells == null || cells.Length != CellCount) Resize(width, height);
     }
 }

@@ -67,6 +67,6 @@ public class PlayerEnergyUI : MonoBehaviour
 
         lastDisplayedEnergy = current;
         lastDisplayedMax = max;
-        energyText.text = $"{current} / {max}";
+        energyText.text = $"MP {current} / {max}";
     }
 }

@@ -92,7 +92,7 @@ public class RewardPedestal : MonoBehaviour
 
     private void Update()
     {
-        if (claimed || overlappingPlayer == null || reward == null) return;
+        if (claimed || overlappingPlayer == null || reward == null || GameInputKeys.IsGameplayBlocked) return;
 
         // 체력이나 재화가 변하면 안내 문구도 따라 바뀌어야 한다.
         RefreshLabel();
@@ -163,7 +163,7 @@ public class RewardPedestal : MonoBehaviour
         // 등급 이름을 앞에 색으로 붙인다.
         string line = ItemGradeInfo.ColoredName(reward.Grade) + " " + reward.BuildLabel();
         // 왜 상호작용이 안 먹는지 알려 준다. 체력이 가득 찬 상태의 회복 같은 경우다.
-        if (!reward.CanGrant(overlappingPlayer)) line += "   (효과 없음)";
+        if (!reward.CanGrant(overlappingPlayer)) line += "   (" + reward.GetUnavailableReason(overlappingPlayer) + ")";
         if (price <= 0) return line;
 
         PlayerWallet wallet = overlappingPlayer != null

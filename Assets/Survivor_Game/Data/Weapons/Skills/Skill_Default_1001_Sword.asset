@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c5f3b5ce7284bb9966e40f48d3574e2, type: 3}
+  m_Name: Skill_Default_1001_Sword
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillProfile
+  skillId: Skill_1001
+  displayName: "돌진 찌르기"
+  equippableSpecialAttack: 1
+  icon: {fileID: 21300000, guid: 329e04f2f9f141ca94bda45110e7babe, type: 3}
+  description: "검 돌진 베기 특수공격"
+  allowedWeaponFamilies: 1
+  exclusiveWeapon: {fileID: 0}
+  mpCost: 5
+  specialAttackClip: {fileID: 7400000, guid: 34b154d9b1682314fa728ecbc2e5579a, type: 2}
+  specialAttack:
+    movementDistance: 2.5
+    movementDuration: 0.18
+    animatorStateName: SpecialAttack
+    startDelay: 0
+    duration: 0.5
+    recoveryDuration: 0.2
+    nextInputStartTime: 0
+    nextInputEndTime: 0
+    hitWindows:
+    - hitboxGroupId: Main
+      startTime: 0.04
+      endTime: 0.3
+      damageMultiplier: 1
+      staggerImpact: 60
+      knockbackStrength: 5
+      knockbackDuration: 0.2
+      knockbackDirection: 1
+    swingVfx:
+      enabled: 0
+      localPosition: {x: 0, y: 0}
+      localRotation: 0
+      effectSize: {x: 9, y: 9}
+      arcAngle: 150
+      centerAngle: 0
+      radius: 0.62
+      thickness: 0.12
+      taperPower: 1.5
+      edgeSoftness: 0.025
+      reverse: 0
+      outerColor: {r: 1, g: 0.08, b: 0.01, a: 0.35}
+      mainColor: {r: 1, g: 0.25, b: 0.03, a: 1}
+      coreColor: {r: 4, g: 1.2, b: 0.25, a: 1}
+      revealDuration: 0.08
+      holdDuration: 0.02
+      fadeDuration: 0.14
+      minimumMotionSpeed: 1
+      maximumMotionSpeed: 25
+      maximumBlurLength: 0.1
+      motionResponseSpeed: 24
+      useAfterimages: 1
+      afterimageInterval: 0.035
+      afterimageMinimumDistance: 0.08
+      afterimageLifetime: 0.12
+      afterimageOpacity: 0.35
+  specialAttackVfx: {fileID: 0}
+  cooldown: 0
+  recoveryDuration: 0
+  useWeaponAttackSpeed: 1
+  canInterruptBasicAttack: 0
+  animationSteps: []

@@ -418,6 +418,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomInstance
   kind: 0
+  designId: Room_Start
+  floorExitOffset: {x: 0, y: -8}
   cellSize: {x: 48, y: 32}
   doors:
   - {fileID: 2286196026535914238}

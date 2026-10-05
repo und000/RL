@@ -18,6 +18,8 @@ public class MetaProgressState
 {
     /// <summary>저장 형식 번호. 나중에 형식을 바꿀 때 갈아 끼우는 기준이 된다.</summary>
     public int version = 1;
+    /// <summary>마을에서 마지막으로 선택한 무기군. 기존 저장은 기본 도로 시작한다.</summary>
+    public int selectedWeaponFamily = (int)WeaponFamily.Katana;
 
     /// <summary>지금 쓸 수 있는 잔존 코드.</summary>
     public int salvage;

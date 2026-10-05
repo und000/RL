@@ -54,8 +54,8 @@ public class WeaponSkillController : MonoBehaviour
 
     public bool TryUseSkill(WeaponSkillProfile skill)
     {
-        if (meleeAttack == null || meleeAttack.WeaponProfile == null ||
-            skill == null || skill.AnimationCount == 0 || IsUsingSkill ||
+        if (!isActiveAndEnabled || meleeAttack == null || meleeAttack.WeaponProfile == null ||
+            skill == null || skill.IsEquippableSpecialAttack || skill.AnimationCount == 0 || IsUsingSkill ||
             GetRemainingCooldown(skill) > 0f) return false;
         if (!meleeAttack.TryBeginExternalAction(skill.CanInterruptBasicAttack)) return false;
 
@@ -137,13 +137,19 @@ public class WeaponSkillController : MonoBehaviour
         if (invokeCompleted) SkillCompleted?.Invoke(skill);
     }
 
-    private void OnDisable()
+    /// <summary>무기 교체·회피·사망 시 동작과 외부 공격 잠금을 함께 해제한다.</summary>
+    public void CancelSkill()
     {
-        if (activeRoutine != null)
+        if (IsUsingSkill)
         {
-            StopCoroutine(activeRoutine);
+            if (activeRoutine != null) StopCoroutine(activeRoutine);
             WeaponSkillProfile interruptedSkill = ActiveSkill;
             FinishSkill(interruptedSkill, false);
         }
+    }
+
+    private void OnDisable()
+    {
+        CancelSkill();
     }
 }

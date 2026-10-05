@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a1d4b16bbcc3ad438e6660630891a5a, type: 3}
+  m_Name: Reward_Skill_Default_Spear
+  m_EditorClassIdentifier: Assembly-CSharp::RoomRewardDefinition
+  displayName: "창 돌진"
+  description: "현재 무기의 특수공격을 교체합니다. 이전 기술은 바닥에 남습니다."
+  icon: {fileID: 0}
+  tintColor: {r: 0.35, g: 0.7, b: 1, a: 1}
+  grade: 2
+  kind: 13
+  amount: 1
+  rate: 0
+  chip: {fileID: 0}
+  weapon: {fileID: 0}
+  equipment: {fileID: 0}
+  specialAttack: {fileID: 11400000, guid: 6ed0ca065f254adab2261f47179442e8, type: 2}
+  shopPrice: 100

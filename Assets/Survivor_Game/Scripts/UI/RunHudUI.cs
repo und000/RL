@@ -73,6 +73,11 @@ public class RunHudUI : MonoBehaviour
     private void Update()
     {
         if (floorBanner == null || !floorBanner.activeSelf) return;
+        if (runManager != null && runManager.IsTransitioning)
+        {
+            bannerHideTime = Time.unscaledTime + bannerDuration;
+            return;
+        }
         if (Time.unscaledTime < bannerHideTime) return;
 
         floorBanner.SetActive(false);

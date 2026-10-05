@@ -32,6 +32,7 @@ public class EnemyHitEffect : MonoBehaviour, IEnemyPoolLifecycle
 
     private SpriteRenderer visualRenderer;
     private Transform visualTransform;
+    public Transform StaggerPoseRoot { get; private set; }
     private Color originalColor;
     private Coroutine effectRoutine;
     private float nextEffectTime;
@@ -94,9 +95,11 @@ public class EnemyHitEffect : MonoBehaviour, IEnemyPoolLifecycle
     private void CreateVisualObject()
     {
         SpriteRenderer originalRenderer = GetComponent<SpriteRenderer>();
+        StaggerPoseRoot = new GameObject("StaggerPose").transform;
+        StaggerPoseRoot.SetParent(transform, false);
         GameObject visualObject = new GameObject("Visual");
         visualTransform = visualObject.transform;
-        visualTransform.SetParent(transform, false);
+        visualTransform.SetParent(StaggerPoseRoot, false);
 
         visualRenderer = visualObject.AddComponent<SpriteRenderer>();
         visualRenderer.sprite = originalRenderer.sprite;

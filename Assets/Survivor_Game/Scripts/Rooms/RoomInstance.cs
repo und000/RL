@@ -14,6 +14,13 @@ public class RoomInstance : MonoBehaviour
     [SerializeField] private RoomKind kind = RoomKind.Normal;
     [Tooltip("층 생성기가 방을 배치할 때 쓰는 그리드 한 칸의 월드 크기.")]
     [SerializeField] private Vector2 cellSize = new Vector2(48f, 32f);
+    [Tooltip("같은 지형 디자인을 공유하는 프리팹은 같은 ID를 사용한다. 비어 있으면 프리팹 이름을 쓴다.")]
+    [SerializeField] private string designId;
+    [Tooltip("다음 스테이지 출구 위치. 방 중심 기준이며 보상 자리와 떨어뜨린다.")]
+    [SerializeField] private Vector2 floorExitOffset = new Vector2(0f, -8f);
+    [Header("보스 선택")]
+    [SerializeField] private Vector2 bossChoiceOffset = new Vector2(0f, -3f);
+    [SerializeField, Min(6f)] private float bossChoiceSpacing = 10f;
 
     [Header("구성 요소")]
     [SerializeField] private RoomDoor[] doors = Array.Empty<RoomDoor>();
@@ -43,8 +50,12 @@ public class RoomInstance : MonoBehaviour
     private bool entered;
     private bool cleared;
     private bool combatActive;
+    private bool bossChosen;
+    private readonly List<BossChoicePedestal> bossChoices = new List<BossChoicePedestal>();
 
     public RoomKind Kind => kind;
+    public string DesignId => string.IsNullOrWhiteSpace(designId) ? name : designId;
+    public Vector3 FloorExitPosition => transform.TransformPoint((Vector3)floorExitOffset);
     public Vector2 CellSize => cellSize;
     public Vector2Int GridPosition { get; private set; }
     public IReadOnlyList<RoomDoor> Doors => doors;
@@ -63,6 +74,7 @@ public class RoomInstance : MonoBehaviour
         entered = false;
         cleared = false;
         combatActive = false;
+        bossChosen = false;
         livingEnemies.Clear();
 
         foreach (RoomDoor door in doors)
@@ -74,8 +86,15 @@ public class RoomInstance : MonoBehaviour
     /// <summary>층 생성기가 배치를 끝낸 뒤, 이어지지 않은 문을 확정하기 위해 호출한다.</summary>
     public void FinalizeDoors()
     {
-        // 시작 방은 처음부터 열어둔다. 나머지는 입장 전까지 닫아둔다.
-        SetDoorsOpen(!IsCombatRoom);
+        // 연결된 문은 입장 전에 열어 둬야 안쪽 감지 영역에 도달할 수 있다.
+        // 전투가 시작되면 EnterRoom에서 잠그고, 이웃이 없는 문은 봉인을 유지한다.
+        SetDoorsOpen(!combatActive);
+    }
+
+    /// <summary>스테이지 시작방은 트리거 재진입 여부에 의존하지 않고 입장을 확정한다.</summary>
+    public void EnterFromStageTransition(Vector2 playerPosition)
+    {
+        if (!entered) EnterRoom(playerPosition);
     }
 
     public RoomDoor GetDoor(RoomDirection direction)
@@ -106,10 +125,69 @@ public class RoomInstance : MonoBehaviour
 
         combatActive = true;
         SetDoorsOpen(false);
+        if (kind == RoomKind.Boss)
+        {
+            ShowBossChoices();
+            return;
+        }
         SpawnEnemies(entryPosition);
 
         // 스폰할 적이 하나도 없으면 즉시 클리어한다.
         if (livingEnemies.Count == 0) MarkCleared();
+    }
+
+    private void ShowBossChoices()
+    {
+        if (context == null || context.BossChoicePrefab == null || context.BossCandidates == null)
+        {
+            Debug.LogError("보스 선택 프리팹과 맵별 후보가 필요합니다.", this);
+            return;
+        }
+        for (int index = 0; index < context.BossCandidates.Count; index++)
+        {
+            Vector2 offset = bossChoiceOffset + Vector2.right *
+                ((index - (context.BossCandidates.Count - 1) * .5f) * bossChoiceSpacing);
+            BossChoicePedestal choice = Instantiate(context.BossChoicePrefab,
+                transform.TransformPoint((Vector3)offset), Quaternion.identity, transform);
+            choice.Configure(this, context.BossCandidates[index], context.Player);
+            bossChoices.Add(choice);
+        }
+    }
+
+    public bool TryChooseBoss(GameObject prefab)
+    {
+        if (!isActiveAndEnabled || kind != RoomKind.Boss || !entered || cleared || bossChosen ||
+            context == null || context.RunManager == null || !context.RunManager.isActiveAndEnabled ||
+            context.RunManager.IsRunOver || context.Spawner == null || context.SpawnPlan == null ||
+            context.Player == null || Time.timeScale <= 0f || GameInputKeys.IsGameplayBlocked) return false;
+        bool offered = false;
+        if (context.BossCandidates != null)
+            foreach (GameObject candidate in context.BossCandidates)
+                if (candidate != null && candidate == prefab) offered = true;
+        if (!offered) return false;
+
+        List<Vector2> points = BuildSpawnPositions();
+        Shuffle(points);
+        Vector2 entry = context.Player.position;
+        OrderAwayFromEntry(points, entry);
+        Vector2 position = PushAwayFromEntry(ResolveSpawnPosition(points, 0), entry);
+        EnemyHealth enemy = context.Spawner.SpawnForRoom(prefab, position,
+            context.SpawnPlan.ResolveScaling(RoomKind.Boss), EnemyRank.Boss);
+        if (enemy == null)
+        {
+            Debug.LogError("선택한 보스 생성에 실패했습니다. 선택을 다시 시도할 수 있습니다.", this);
+            return false;
+        }
+        bossChosen = true;
+        Track(enemy);
+        foreach (BossChoicePedestal choice in bossChoices)
+            if (choice != null)
+            {
+                choice.gameObject.SetActive(false);
+                Destroy(choice.gameObject);
+            }
+        bossChoices.Clear();
+        return true;
     }
 
     private void SpawnEnemies(Vector2 entryPosition)
@@ -129,7 +207,8 @@ public class RoomInstance : MonoBehaviour
 
             Vector2 position = ResolveSpawnPosition(points, index);
             position = PushAwayFromEntry(position, entryPosition);
-            EnemyHealth spawned = context.Spawner.SpawnForRoom(prefab, position, scaling);
+            EnemyHealth spawned = context.Spawner.SpawnForRoom(prefab, position, scaling,
+                kind == RoomKind.Elite ? EnemyRank.Elite : EnemyRank.Normal);
             if (spawned != null) Track(spawned);
         }
     }
@@ -291,7 +370,7 @@ public class RoomInstance : MonoBehaviour
         for (int index = 0; index < drops.Count; index++)
         {
             RoomRewardDefinition reward = drops[index];
-            if (reward == null) continue;
+            if (reward == null || !IsRewardAllowed(reward)) continue;
 
             RewardDrop drop = Instantiate(
                 context.DropPrefab, origin, Quaternion.identity, transform);
@@ -336,7 +415,7 @@ public class RoomInstance : MonoBehaviour
         List<RoomRewardDefinition> chosen = new List<RoomRewardDefinition>(count);
         for (int index = 0; index < count; index++)
         {
-            RoomRewardDefinition reward = context.RewardPlan.Pick(kind, chosen);
+            RoomRewardDefinition reward = context.RewardPlan.Pick(kind, chosen, IsRewardAllowed);
             if (reward == null) break;
             chosen.Add(reward);
         }
@@ -353,6 +432,9 @@ public class RoomInstance : MonoBehaviour
             pedestals.Add(pedestal);
         }
     }
+
+    private bool IsRewardAllowed(RoomRewardDefinition reward) =>
+        context.WeaponEquipment == null || context.WeaponEquipment.CanOfferReward(reward);
 
     /// <summary>영구 개조의 할인을 값에 반영한다. 공짜가 되지는 않는다.</summary>
     private static int ApplyShopDiscount(int price)
@@ -433,6 +515,11 @@ public class RoomInstance : MonoBehaviour
 /// <summary>방이 스폰할 때 필요한 런타임 참조 묶음.</summary>
 public class RoomRuntimeContext
 {
+    public PlayerWeaponEquipment WeaponEquipment;
+    public RunManager RunManager;
+    public BossChoicePedestal BossChoicePrefab;
+    public IReadOnlyList<GameObject> BossCandidates;
+    public FloorExit ExitPrefab;
     public EnemySpawner Spawner;
     public FloorSpawnPlan SpawnPlan;
     public FloorRewardPlan RewardPlan;

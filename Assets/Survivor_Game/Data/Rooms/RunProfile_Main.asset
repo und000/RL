@@ -21,3 +21,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3286755d1a84de94d9102b20e18e9a8a, type: 2}
   rewardPedestalPrefab: {fileID: 8005013765885916238, guid: 864fc5c6491514f43a166d88033029fe, type: 3}
   rewardDropPrefab: {fileID: 7800880956558953473, guid: 8709cc7f25cf3be48b6304108db8b6a7, type: 3}
+  floorExitPrefab: {fileID: 8005013765885916238, guid: 7495f377c6f145faa51cb9a4da9a3930, type: 3}
+  bossChoicePrefab: {fileID: 8005013765885916238, guid: 97129fe4700f4bfdbc6151b91caf7754, type: 3}
+  roomChoiceUIPrefab: {fileID: 10104, guid: 06d864ef104244e8b0b9f194eda53585, type: 3}
+  minimumRoomChoices: 2
+  maximumRoomChoices: 3
+  firstEliteStage: 3
+  stageTransitionUIPrefab: {fileID: 10011, guid: 3b8d5cd7b9c544c196f0f8e88095e101, type: 3}

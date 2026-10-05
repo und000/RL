@@ -33,9 +33,8 @@ public class PlayerHealth : MonoBehaviour
     private bool isTeleportInvulnerable;
     private Rigidbody2D body;
     private PlayerMovement playerMovement;
-    private AutoWeapon autoWeapon;
     private Collider2D playerCollider;
-    private SpriteRenderer spriteRenderer;
+    [SerializeField] private SpriteRenderer spriteRenderer;
     private PlayerLevel playerLevel;
     private PlayerDodge playerDodge;
     private PlayerTeleportSkill playerTeleportSkill;
@@ -53,9 +52,12 @@ public class PlayerHealth : MonoBehaviour
         currentHealth = maxHealth;
         body = GetComponent<Rigidbody2D>();
         playerMovement = GetComponent<PlayerMovement>();
-        autoWeapon = GetComponent<AutoWeapon>();
         playerCollider = GetComponent<Collider2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+        {
+            Transform image = transform.Find("Body/Image");
+            spriteRenderer = image != null ? image.GetComponent<SpriteRenderer>() : GetComponent<SpriteRenderer>();
+        }
         playerLevel = GetComponent<PlayerLevel>();
         playerDodge = GetComponent<PlayerDodge>();
         playerTeleportSkill = GetComponent<PlayerTeleportSkill>();
@@ -126,7 +128,7 @@ public class PlayerHealth : MonoBehaviour
 
     /// <summary>
     /// 영구 개조로 얻은 재기동이 남아 있으면 그 자리에서 다시 일어난다.
-    /// 일어난 뒤 잠시 무적이라 같은 장판에 곹쳐 죽지 않는다.
+    /// 일어난 뒤 잠시 무적이라 같은 장판에 겹쳐 죽지 않는다.
     /// </summary>
     private bool TryRevive()
     {
@@ -172,11 +174,6 @@ public class PlayerHealth : MonoBehaviour
         if (playerTeleportSkill != null)
         {
             playerTeleportSkill.enabled = false;
-        }
-
-        if (autoWeapon != null)
-        {
-            autoWeapon.enabled = false;
         }
 
         if (playerCollider != null)

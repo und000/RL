@@ -26,7 +26,6 @@ MonoBehaviour:
   - cell: {x: 0, y: 0}
     direction: 3
     type: 0
-  heat: 5
   modifiers:
   - stat: 0
     value: 8

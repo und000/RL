@@ -26,9 +26,7 @@ public enum ChipStatKind
     EnergyRegeneration,
     PickupRange,
     /// <summary>재사용 대기시간 감소율. 0.1 = 10% 감소.</summary>
-    CooldownReductionRate,
-    /// <summary>방열 용량. 보드가 감당할 수 있는 총 발열을 올린다.</summary>
-    HeatCapacity
+    CooldownReductionRate
 }
 
 /// <summary>칩 하나가 주는 스탯 변화 한 줄.</summary>

@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c5f3b5ce7284bb9966e40f48d3574e2, type: 3}
+  m_Name: Skill_Default_2001_Greatsword
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSkillProfile
+  skillId: Skill_2001
+  displayName: "대검 강습"
+  equippableSpecialAttack: 1
+  icon: {fileID: 21300000, guid: 9089c31b2b0344c0a3fe554eda2c1d42, type: 3}
+  description: "대검 강습 특수공격"
+  allowedWeaponFamilies: 4
+  exclusiveWeapon: {fileID: 0}
+  mpCost: 8
+  specialAttackClip: {fileID: 7400000, guid: 3ec9a1abb9138bd43996362c3bc7b4a7, type: 2}
+  specialAttack:
+    movementDistance: 0.45
+    movementDuration: 0.15
+    animatorStateName: SpecialAttack
+    startDelay: 0
+    duration: 0.7
+    recoveryDuration: 0.25
+    nextInputStartTime: 0
+    nextInputEndTime: 0
+    hitWindows:
+    - hitboxGroupId: Main
+      startTime: 0.3
+      endTime: 0.52
+      damageMultiplier: 2.8
+      staggerImpact: 60
+      knockbackStrength: 12
+      knockbackDuration: 0.3
+      knockbackDirection: 0
+    swingVfx:
+      enabled: 1
+      localPosition: {x: 0, y: 0}
+      localRotation: 0
+      effectSize: {x: 11, y: 11}
+      arcAngle: 200
+      centerAngle: 0
+      radius: 0.66
+      thickness: 0.16
+      taperPower: 1.4
+      edgeSoftness: 0.03
+      reverse: 0
+      outerColor: {r: 1, g: 0.08, b: 0.01, a: 0.35}
+      mainColor: {r: 1, g: 0.25, b: 0.03, a: 1}
+      coreColor: {r: 4, g: 1.2, b: 0.25, a: 1}
+      revealDuration: 0.11
+      holdDuration: 0.04
+      fadeDuration: 0.2
+      minimumMotionSpeed: 1
+      maximumMotionSpeed: 25
+      maximumBlurLength: 0.14
+      motionResponseSpeed: 24
+      useAfterimages: 1
+      afterimageInterval: 0.03
+      afterimageMinimumDistance: 0.08
+      afterimageLifetime: 0.14
+      afterimageOpacity: 0.4
+  specialAttackVfx: {fileID: 0}
+  cooldown: 0
+  recoveryDuration: 0
+  useWeaponAttackSpeed: 1
+  canInterruptBasicAttack: 0
+  animationSteps: []

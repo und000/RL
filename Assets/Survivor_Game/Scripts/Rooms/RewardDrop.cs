@@ -48,7 +48,7 @@ public class RewardDrop : MonoBehaviour
     private bool ReplacesEquipment =>
         reward != null &&
         (reward.Kind == RoomRewardKind.Weapon ||
-            reward.Kind == RoomRewardKind.Equipment);
+            reward.Kind == RoomRewardKind.Equipment || reward.Kind == RoomRewardKind.SpecialAttack);
 
     /// <summary>무엇을 담을지 정하고, from에서 to로 던져지는 연출을 시작한다.</summary>
     public void Configure(RoomRewardDefinition definition, Vector2 from, Vector2 to)
@@ -99,7 +99,7 @@ public class RewardDrop : MonoBehaviour
         if (reward == null) return;
         RefreshLabel();
 
-        if (overlappingPlayer == null) return;
+        if (overlappingPlayer == null || GameInputKeys.IsGameplayBlocked) return;
 
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null ||
@@ -156,7 +156,7 @@ public class RewardDrop : MonoBehaviour
         {
             line += "\n" + GameInputKeys.InteractPrompt +
                 (ReplacesEquipment ? " 교체" : " 획득");
-            if (!reward.CanGrant(overlappingPlayer)) line += "   (효과 없음)";
+            if (!reward.CanGrant(overlappingPlayer)) line += "   (" + reward.GetUnavailableReason(overlappingPlayer) + ")";
         }
         if (line == lastLabelLine) return;
 

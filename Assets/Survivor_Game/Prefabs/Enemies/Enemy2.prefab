@@ -8,6 +8,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 7894000000000000001}
   - component: {fileID: 2216046368987165906}
   - component: {fileID: 8913356752899480372}
   - component: {fileID: 9038054077426685335}
@@ -265,10 +266,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   profile: {fileID: 11400000, guid: 25e15bdf95da4bfeaf41b14ad51ef975, type: 2}
-  maxHealth: 60
-  defense: 0
-  experienceGemPrefab: {fileID: 2295939921779772334, guid: 92ca83c1e78e38c479e631929ac419ca, type: 3}
-  myExperience: 1
 --- !u!114 &9147379770449403647
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -330,3 +327,19 @@ MonoBehaviour:
   healthBarType: 0
   barOffset: {x: 0, y: 1.2, z: 0}
   visibleDuration: 5
+--- !u!114 &7894000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6911391679415815211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e719d6883d184cccbefba3211773a468, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyStagger
+  collapseClip: {fileID: 7400000, guid: 6ee4d9b6717f4174bb815b987c79fa56, type: 2}
+  staggerImpactPrefab: {fileID: 1003, guid: 94747419ba8647cdaceaeaaa16159924, type: 3}
+  majorStaggerImpactPrefab: {fileID: 1003, guid: b3e3b87f53604f2793bbb7f18d25634d, type: 3}
+  staggerImpactOffset: {x: 0, y: 0}

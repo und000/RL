@@ -72,14 +72,14 @@ public class FloorRewardPlan
     /// 같은 방에 똑같은 선택지가 나란히 놓이지 않게 한다.
     /// </summary>
     public RoomRewardDefinition Pick(
-        RoomKind kind, IList<RoomRewardDefinition> exclude)
+        RoomKind kind, IList<RoomRewardDefinition> exclude, Predicate<RoomRewardDefinition> allowed = null)
     {
         Pool pool = FindPool(kind);
         if (pool == null || pool.rewards == null) return null;
 
-        RoomRewardDefinition picked = PickWeighted(pool.rewards, exclude);
+        RoomRewardDefinition picked = PickWeighted(pool.rewards, exclude, allowed);
         // 남은 후보가 없으면 중복을 허용해서라도 빈 받침대를 만들지 않는다.
-        return picked != null ? picked : PickWeighted(pool.rewards, null);
+        return picked != null ? picked : PickWeighted(pool.rewards, null, allowed);
     }
 
     private Pool FindPool(RoomKind kind)
@@ -93,12 +93,12 @@ public class FloorRewardPlan
     }
 
     private static RoomRewardDefinition PickWeighted(
-        Entry[] entries, IList<RoomRewardDefinition> exclude)
+        Entry[] entries, IList<RoomRewardDefinition> exclude, Predicate<RoomRewardDefinition> allowed)
     {
         float total = 0f;
         foreach (Entry entry in entries)
         {
-            if (!IsUsable(entry, exclude)) continue;
+            if (!IsUsable(entry, exclude, allowed)) continue;
             total += Mathf.Max(0f, entry.weight);
         }
         if (total <= 0f) return null;
@@ -106,16 +106,17 @@ public class FloorRewardPlan
         float roll = UnityEngine.Random.value * total;
         foreach (Entry entry in entries)
         {
-            if (!IsUsable(entry, exclude)) continue;
+            if (!IsUsable(entry, exclude, allowed)) continue;
             roll -= Mathf.Max(0f, entry.weight);
             if (roll <= 0f) return entry.reward;
         }
         return null;
     }
 
-    private static bool IsUsable(Entry entry, IList<RoomRewardDefinition> exclude)
+    private static bool IsUsable(Entry entry, IList<RoomRewardDefinition> exclude, Predicate<RoomRewardDefinition> allowed)
     {
         if (entry == null || entry.reward == null) return false;
+        if (allowed != null && !allowed(entry.reward)) return false;
         return exclude == null || !exclude.Contains(entry.reward);
     }
 

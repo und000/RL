@@ -13,6 +13,20 @@ public class ItemDropSpawner : MonoBehaviour
     [Tooltip("발밑에서 얼마나 떨어진 자리에 떨굴지. 벽에 박히지 않게 짧게 둔다.")]
     [SerializeField, Min(0f)] private float dropDistance = 1.8f;
 
+    public bool CanDrop => isActiveAndEnabled && dropPrefab != null;
+
+    public void Drop(WeaponLoadout weapon)
+    {
+        if (weapon == null || weapon.Weapon == null) return;
+        Spawn(RoomRewardDefinition.CreateRuntimeWeaponReward(weapon));
+    }
+
+    public void DropSpecialAttack(WeaponSkillProfile skill)
+    {
+        if (skill == null || !skill.IsTransferable) return;
+        Spawn(RoomRewardDefinition.CreateRuntimeSpecialAttackReward(skill));
+    }
+
     /// <summary>이 무기를 바닥에 떨군다.</summary>
     public void Drop(WeaponStatsProfile weapon)
     {
@@ -29,7 +43,12 @@ public class ItemDropSpawner : MonoBehaviour
 
     private void Spawn(RoomRewardDefinition reward)
     {
-        if (reward == null || dropPrefab == null) return;
+        if (reward == null) return;
+        if (!CanDrop)
+        {
+            if (reward.IsRuntimeCopy) Destroy(reward);
+            return;
+        }
 
         Vector2 origin = transform.position;
         Vector2 direction = Random.insideUnitCircle.normalized;

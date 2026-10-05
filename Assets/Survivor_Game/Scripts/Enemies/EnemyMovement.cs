@@ -18,6 +18,7 @@ public class EnemyMovement : MonoBehaviour
     private Rigidbody2D body;
     private EnemyKnockback enemyKnockback;
     private EnemyAwareness awareness;
+    private EnemyStagger stagger;
     private Transform target;
     private ContactFilter2D separationFilter;
     private readonly List<Collider2D> nearbyEnemies = new List<Collider2D>(16);
@@ -27,6 +28,7 @@ public class EnemyMovement : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         enemyKnockback = GetComponent<EnemyKnockback>();
         awareness = GetComponent<EnemyAwareness>();
+        stagger = GetComponent<EnemyStagger>();
 
         int enemyLayer = LayerMask.NameToLayer("Enemy");
         separationFilter = new ContactFilter2D();
@@ -45,6 +47,11 @@ public class EnemyMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (stagger != null && stagger.IsStaggered)
+        {
+            body.linearVelocity = Vector2.zero;
+            return;
+        }
         if (enemyKnockback != null &&
             enemyKnockback.TryGetKnockbackVelocity(out Vector2 knockbackVelocity))
         {

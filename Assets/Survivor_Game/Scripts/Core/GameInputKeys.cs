@@ -6,12 +6,15 @@ using UnityEngine.InputSystem;
 /// </summary>
 public static class GameInputKeys
 {
+    public static bool IsGameplayBlocked => LevelUpUI.IsPopupOpen || RoomChoiceUI.IsBlockingGameplay || StageTransitionUI.IsBlockingGameplay;
     /// <summary>
     /// 상호작용 키. 보상 받침대와 바닥 드롭이 모두 이 키를 쓴다.
     /// 전부 다른 키로 바꾸려면 이 한 줄만 고치면 되고, 화면에 뜨는 안내 문구도
     /// 여기서 만들어 쓰므로 함께 따라간다.
     /// </summary>
     public const Key Interact = Key.F;
+    public const Key ExtractSpecialAttack = Key.G;
+    public static string ExtractSpecialAttackPrompt => "[" + ExtractSpecialAttack + "]";
 
     /// <summary>"[F]"처럼 안내에 끼워 넣을 키 표기.</summary>
     public static string InteractPrompt => "[" + Interact + "]";

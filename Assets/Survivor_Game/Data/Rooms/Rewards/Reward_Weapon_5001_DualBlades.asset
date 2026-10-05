@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a1d4b16bbcc3ad438e6660630891a5a, type: 3}
+  m_Name: Reward_Weapon_5001_DualBlades
+  m_EditorClassIdentifier: Assembly-CSharp::RoomRewardDefinition
+  displayName: "쌍월검"
+  description: "5001 무기"
+  icon: {fileID: 21300000, guid: 8f1f072d8a62421387c72d0b47a50576, type: 3}
+  tintColor: {r: 1, g: 1, b: 1, a: 1}
+  kind: 11
+  amount: 10
+  rate: 0.25
+  chip: {fileID: 0}
+  weapon: {fileID: 11400000, guid: b05779f61c224905a45277a74aa1eaa0, type: 2}
+  shopPrice: 170

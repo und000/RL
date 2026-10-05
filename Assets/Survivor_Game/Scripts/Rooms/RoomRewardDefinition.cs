@@ -21,14 +21,13 @@ public enum RoomRewardKind
     BoardRepair,
     /// <summary>빈 칸 하나를 전원 단자로 바꿔 회로를 하나 더 굴리게 한다.</summary>
     BoardPowerRail,
-    /// <summary>빈 칸 하나를 방열 셀로 바꾼다.</summary>
-    BoardHeatSink,
     /// <summary>빈 칸 하나를 버스 칸으로 바꿔 전류가 멀리 뻗게 한다.</summary>
-    BoardBusCell,
+    BoardBusCell = 10, // 기존 보상 에셋의 직렬화 값을 유지한다.
     /// <summary>무기를 바꿔 준다.</summary>
     Weapon,
     /// <summary>의체 부품을 바꿔 준다.</summary>
-    Equipment
+    Equipment,
+    SpecialAttack = 13
 }
 
 /// <summary>
@@ -63,6 +62,10 @@ public class RoomRewardDefinition : ScriptableObject
     [Tooltip("장비 보상일 때 달아 줄 부품.")]
     [SerializeField] private EquipmentDefinition equipment;
 
+    [Tooltip("Transferable special attack item. Bound unique skills cannot be granted as items.")]
+    [SerializeField] private WeaponSkillProfile specialAttack;
+    private WeaponLoadout runtimeWeaponLoadout;
+
     [Header("상점")]
     [Tooltip("상점 방에 놓였을 때의 기본 가격. 층 배율이 여기에 곱해진다.")]
     [SerializeField, Min(0)] private int shopPrice = 60;
@@ -74,6 +77,7 @@ public class RoomRewardDefinition : ScriptableObject
             if (!string.IsNullOrWhiteSpace(displayName)) return displayName;
             if (kind == RoomRewardKind.Chip && chip != null) return chip.DisplayName;
             if (kind == RoomRewardKind.Weapon && weapon != null) return weapon.DisplayName;
+            if (kind == RoomRewardKind.SpecialAttack && specialAttack != null) return specialAttack.DisplayName;
             if (kind == RoomRewardKind.Equipment && equipment != null)
             {
                 return equipment.BuildLabel();
@@ -83,7 +87,10 @@ public class RoomRewardDefinition : ScriptableObject
     }
 
     public string Description => description;
-    public Sprite Icon => icon != null || chip == null ? icon : chip.Icon;
+    public Sprite Icon => icon != null ? icon : kind == RoomRewardKind.Weapon && weapon != null
+        ? weapon.Icon : kind == RoomRewardKind.SpecialAttack && specialAttack != null
+        ? specialAttack.Icon : chip != null ? chip.Icon : null;
+    public WeaponSkillProfile SpecialAttack => specialAttack;
     public Color TintColor => tintColor;
     public RoomRewardKind Kind => kind;
     public int Amount => amount;
@@ -143,6 +150,26 @@ public class RoomRewardDefinition : ScriptableObject
         return created;
     }
 
+    public static RoomRewardDefinition CreateRuntimeWeaponReward(WeaponLoadout loadout)
+    {
+        if (loadout == null || loadout.Weapon == null) return null;
+        RoomRewardDefinition created = CreateRuntimeWeaponReward(loadout.Weapon);
+        created.runtimeWeaponLoadout = loadout;
+        return created;
+    }
+
+    public static RoomRewardDefinition CreateRuntimeSpecialAttackReward(WeaponSkillProfile skill)
+    {
+        if (skill == null || !skill.IsTransferable) return null;
+        RoomRewardDefinition created = CreateInstance<RoomRewardDefinition>();
+        created.name = "RuntimeSpecialAttack_" + skill.name;
+        created.kind = RoomRewardKind.SpecialAttack;
+        created.specialAttack = skill;
+        created.displayName = skill.DisplayName;
+        created.IsRuntimeCopy = true;
+        return created;
+    }
+
     /// <summary>밀려난 장비를 바닥에 떨구기 위해 그 부품만 담은 보상을 즉석에서 만든다.</summary>
     public static RoomRewardDefinition CreateRuntimeEquipmentReward(
         EquipmentDefinition equipment)
@@ -174,6 +201,8 @@ public class RoomRewardDefinition : ScriptableObject
                 return $"{DisplayName}  +{amount} EXP";
             case RoomRewardKind.ExperienceRatio:
                 return $"{DisplayName}  +{Mathf.RoundToInt(rate * 100f)}% EXP";
+            case RoomRewardKind.SpecialAttack:
+                return specialAttack != null ? $"{DisplayName} · {specialAttack.MpCost} MP · {specialAttack.AllowedWeaponFamiliesLabel}" : DisplayName;
             case RoomRewardKind.BoardExpand:
                 return $"{DisplayName}  보드 +{Mathf.Max(1, amount)}행";
             default:
@@ -186,7 +215,6 @@ public class RoomRewardDefinition : ScriptableObject
         kind == RoomRewardKind.BoardExpand ||
         kind == RoomRewardKind.BoardRepair ||
         kind == RoomRewardKind.BoardPowerRail ||
-        kind == RoomRewardKind.BoardHeatSink ||
         kind == RoomRewardKind.BoardBusCell;
 
     /// <summary>
@@ -211,6 +239,13 @@ public class RoomRewardDefinition : ScriptableObject
                 PlayerEnergy energy = player.GetComponentInParent<PlayerEnergy>();
                 return energy != null && energy.CurrentEnergy < energy.MaxEnergy;
             }
+            case RoomRewardKind.SpecialAttack:
+            {
+                PlayerWeaponEquipment holder = FindWeaponHolder(player);
+                if (holder == null || !holder.CanEquipSpecialAttack(specialAttack)) return false;
+                ItemDropSpawner drops = FindDropSpawner(player);
+                return holder.EquippedSpecialAttack == null || (drops != null && drops.CanDrop);
+            }
             case RoomRewardKind.Chip:
                 return chip != null && player.GetComponentInParent<ChipInventory>() != null;
             case RoomRewardKind.Equipment:
@@ -222,9 +257,10 @@ public class RoomRewardDefinition : ScriptableObject
             case RoomRewardKind.Weapon:
             {
                 PlayerWeaponEquipment holder = FindWeaponHolder(player);
-                // 이미 들고 있는 무기를 다시 주워도 아무 일이 없다.
-                return weapon != null && holder != null &&
-                    holder.EquippedWeapon != weapon;
+                if (holder == null || !holder.CanEquipWeapon(weapon)) return false;
+                if (holder.EquippedWeapon == weapon && (runtimeWeaponLoadout == null || holder.Loadout == runtimeWeaponLoadout)) return false;
+                ItemDropSpawner drops = FindDropSpawner(player);
+                return holder.Loadout == null || (drops != null && drops.CanDrop);
             }
             default:
                 if (IsBoardUpgrade) return CanUpgradeBoard();
@@ -290,6 +326,8 @@ public class RoomRewardDefinition : ScriptableObject
                 return GrantEnergy(player);
             case RoomRewardKind.Chip:
                 return GrantChip(player);
+            case RoomRewardKind.SpecialAttack:
+                return GrantSpecialAttack(player);
             case RoomRewardKind.Weapon:
                 return GrantWeapon(player);
             case RoomRewardKind.Equipment:
@@ -317,8 +355,6 @@ public class RoomRewardDefinition : ScriptableObject
                 return board.RepairDamagedCell();
             case RoomRewardKind.BoardPowerRail:
                 return board.AddPowerRail();
-            case RoomRewardKind.BoardHeatSink:
-                return board.AddHeatSink();
             case RoomRewardKind.BoardBusCell:
                 return board.AddBusCell();
             default:
@@ -373,14 +409,38 @@ public class RoomRewardDefinition : ScriptableObject
         return true;
     }
 
+    private bool GrantSpecialAttack(GameObject player)
+    {
+        if (!CanGrant(player)) return false;
+        PlayerWeaponEquipment holder = FindWeaponHolder(player);
+        if (!holder.TryEquipSpecialAttack(specialAttack, out WeaponSkillProfile previous)) return false;
+        if (previous != null) FindDropSpawner(player).DropSpecialAttack(previous);
+        return true;
+    }
+
+    public string GetUnavailableReason(GameObject player)
+    {
+        if (kind == RoomRewardKind.Weapon && player != null && FindWeaponHolder(player)?.IsRunWeaponLocked == true)
+            return "출발할 때 선택한 무기 유지";
+        if (kind != RoomRewardKind.SpecialAttack) return "효과 없음";
+        PlayerWeaponEquipment holder = player != null ? FindWeaponHolder(player) : null;
+        if (holder == null || holder.EquippedWeapon == null) return "무기 필요";
+        if (holder.EquippedWeapon.LockSpecialAttack) return "유니크 무기 · 교체 불가";
+        if (specialAttack == null || !specialAttack.IsTransferable) return "전용 기술 · 이전 불가";
+        if (!specialAttack.CanUseOn(holder.EquippedWeapon)) return $"사용 가능: {specialAttack.AllowedWeaponFamiliesLabel}";
+        if (holder.EquippedSpecialAttack == specialAttack) return "이미 장착됨";
+        if (!holder.CanChangeSpecialAttack) return "행동 종료 후 교체 가능";
+        return "장착 불가";
+    }
+
     private bool GrantWeapon(GameObject player)
     {
         if (weapon == null) return false;
         PlayerWeaponEquipment holder = FindWeaponHolder(player);
-        if (holder == null || holder.EquippedWeapon == weapon) return false;
+        if (holder == null || !CanGrant(player)) return false;
 
-        WeaponStatsProfile previous = holder.EquippedWeapon;
-        holder.Equip(weapon);
+        WeaponLoadout previous = holder.Loadout;
+        holder.Equip(runtimeWeaponLoadout ?? new WeaponLoadout(weapon));
 
         // 들고 있던 무기는 사라지지 않고 바닥에 남아, 마음이 바뀌면 되돌릴 수 있다.
         if (previous != null)
@@ -392,7 +452,7 @@ public class RoomRewardDefinition : ScriptableObject
     }
 
     /// <summary>
-    /// 무기 장착 컴포넌트는 플레이어 뿌리가 아니라 상체 오브젝트에 달려 있다.
+    /// 무기 장착 컴포넌트는 플레이어 뿌리가 아니라 Body 같은 자식 오브젝트에 달려 있다.
     /// 부모 방향으로만 찾으면 놓치므로 뿌리에서 자식까지 훑는다.
     /// </summary>
     private static PlayerWeaponEquipment FindWeaponHolder(GameObject player)

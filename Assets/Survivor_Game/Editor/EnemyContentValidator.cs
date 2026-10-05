@@ -89,16 +89,9 @@ public static class EnemyContentValidator
             {
                 ReportWarning(prefab, "Off-screen marker target is missing.", ref warnings);
             }
-            if (health.Profile != null && health.Profile.Rank == EnemyRank.Boss)
+            if (prefab.GetComponent<EnemyHealthBar>() == null)
             {
-                if (prefab.GetComponent<BossHealthBarUI>() == null)
-                {
-                    ReportError(prefab, "Boss prefab requires BossHealthBarUI.", ref errors);
-                }
-            }
-            else if (prefab.GetComponent<EnemyHealthBar>() == null)
-            {
-                ReportError(prefab, "Normal/elite prefab requires EnemyHealthBar.", ref errors);
+                ReportError(prefab, "Enemy prefab requires EnemyHealthBar.", ref errors);
             }
 
             EnemyPatternController patternController = prefab.GetComponent<EnemyPatternController>();
@@ -243,7 +236,7 @@ public class EnemyHealthEditor : Editor
         if (health.Profile == null)
         {
             EditorGUILayout.HelpBox(
-                "Enemy Profile is required. Legacy fallback fields are migration-only.",
+                "Enemy Profile is required. Configure health, defense and experience in that asset.",
                 MessageType.Error);
             return;
         }

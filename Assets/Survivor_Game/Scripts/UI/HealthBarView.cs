@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum HealthBarType
 {
@@ -8,6 +9,7 @@ public enum HealthBarType
 }
 
 [RequireComponent(typeof(CanvasGroup))]
+[DefaultExecutionOrder(1100)]
 public class HealthBarView : MonoBehaviour
 {
     [SerializeField] private RectTransform fillTransform;
@@ -15,10 +17,19 @@ public class HealthBarView : MonoBehaviour
     [SerializeField, Min(0f)] private float damageTrailDelay = 0.25f;
     [SerializeField, Min(0.01f)] private float damageTrailDuration = 0.45f;
     [SerializeField, Min(0f)] private float deathDisplayDuration = 0.35f;
+    [Header("충격 게이지 (체력바 아래 표시)")]
+    [SerializeField, InspectorName("충격 게이지 채움 영역")] private RectTransform staggerFillTransform;
+    [SerializeField, InspectorName("충격 게이지 이미지")] private Image staggerFillImage;
+    [SerializeField, InspectorName("붕괴 발광 이미지")] private Image staggerGlowImage;
+    [SerializeField, InspectorName("충격 게이지 색상")] private Color staggerColor = new Color(1f, 0.72f, 0.16f, 1f);
+    [SerializeField, InspectorName("붕괴 색상")] private Color staggeredColor = new Color(1f, 0.08f, 0.04f, 1f);
+    [SerializeField, InspectorName("붕괴 점멸 색상")] private Color staggerPulseColor = new Color(1f, 0.45f, 0.3f, 1f);
+    [SerializeField, InspectorName("붕괴 점멸 빈도"), Min(0f)] private float staggerPulseFrequency = 3f;
 
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private EnemyHealth targetHealth;
+    private EnemyStagger targetStagger;
     private EnemyHealthBarManager manager;
     private Camera worldCamera;
     private HealthBarType healthBarType;
@@ -70,6 +81,9 @@ public class HealthBarView : MonoBehaviour
         targetHealth.OnDamaged += HandleDamaged;
         targetHealth.OnHealthChanged += HandleHealthChanged;
         targetHealth.OnDied += HandleTargetDied;
+        targetStagger = targetHealth.GetComponent<EnemyStagger>();
+        if (targetStagger != null) targetStagger.OnChanged += UpdateStagger;
+        UpdateStagger();
 
         UpdateBarFill();
         UpdateVisibility();
@@ -106,12 +120,30 @@ public class HealthBarView : MonoBehaviour
             UpdateBarFill();
         }
 
-        if (healthBarType != HealthBarType.Boss)
-        {
-            UpdateTrackedPosition();
-        }
-
+        UpdateStagger();
         UpdateVisibility();
+    }
+
+    private void LateUpdate()
+    {
+        // Project after camera follow, impact shake and zoom so both bars stay attached.
+        if (healthBarType != HealthBarType.Boss && targetHealth != null) UpdateTrackedPosition();
+    }
+
+    private void UpdateStagger()
+    {
+        bool staggered = !targetDied && targetStagger != null && targetStagger.IsStaggered;
+        float ratio = !targetDied && targetStagger != null ? targetStagger.Ratio : 0f;
+        if (staggerFillTransform != null) staggerFillTransform.anchorMax = new Vector2(ratio, 1f);
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * staggerPulseFrequency * Mathf.PI * 2f);
+        if (staggerFillImage != null)
+            staggerFillImage.color = staggered ? Color.Lerp(staggeredColor, staggerPulseColor, pulse) : staggerColor;
+        if (staggerGlowImage != null)
+        {
+            Color glow = staggeredColor;
+            glow.a = staggered ? Mathf.Lerp(0.15f, 0.5f, pulse) : 0f;
+            staggerGlowImage.color = glow;
+        }
     }
 
     private void HandleDamaged()
@@ -170,6 +202,7 @@ public class HealthBarView : MonoBehaviour
     private void UpdateVisibility()
     {
         bool shouldShow = healthBarType == HealthBarType.Boss ||
+            (!targetDied && targetStagger != null && targetStagger.Current > 0f) ||
             Time.unscaledTime < visibleUntil;
 
         if (shouldShow && healthBarType != HealthBarType.Boss && worldCamera != null)
@@ -203,6 +236,7 @@ public class HealthBarView : MonoBehaviour
         deathReleaseTime = Time.unscaledTime + deathDisplayDuration;
         visibleUntil = Mathf.Max(visibleUntil, deathReleaseTime);
         UnsubscribeFromTarget();
+        UpdateStagger();
         UpdateBarFill();
         UpdateVisibility();
 
@@ -222,6 +256,7 @@ public class HealthBarView : MonoBehaviour
 
     private void UnsubscribeFromTarget()
     {
+        if (targetStagger != null) targetStagger.OnChanged -= UpdateStagger;
         if (targetHealth == null)
         {
             return;
@@ -259,6 +294,7 @@ public class HealthBarView : MonoBehaviour
         UnsubscribeFromTarget();
 
         targetHealth = null;
+        targetStagger = null;
         manager = null;
         targetDied = false;
         canvasGroup.alpha = 0f;

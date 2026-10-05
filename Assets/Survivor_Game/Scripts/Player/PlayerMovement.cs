@@ -66,7 +66,7 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
+        if (keyboard == null || GameInputKeys.IsGameplayBlocked)
         {
             moveInput = Vector2.zero;
             isSprinting = false;

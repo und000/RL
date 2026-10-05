@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 강공격 같은 소모 행동에 쓰이는 플레이어 자원.
+/// 강공격과 장착 특수공격이 함께 사용하는 MP 자원.
 /// 일정 시간 쓰지 않으면 스스로 차오른다.
 /// </summary>
 [DisallowMultipleComponent]
