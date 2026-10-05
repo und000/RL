@@ -28,6 +28,16 @@ public static class MetaProgress
     }
 
     public static int Salvage => State.salvage;
+    public static WeaponFamily SelectedWeaponFamily => (WeaponFamily)State.selectedWeaponFamily;
+
+    public static bool SelectWeaponFamily(WeaponFamily family)
+    {
+        if (WeaponFamilyUtility.NumberBase(family) == 0) return false;
+        State.selectedWeaponFamily = (int)family;
+        Save();
+        OnChanged?.Invoke();
+        return true;
+    }
 
     public static void Load()
     {

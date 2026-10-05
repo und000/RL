@@ -18,6 +18,7 @@ public abstract class EnemyAttackPattern : MonoBehaviour
 
     private float nextAvailableTime;
     private EnemyAwareness awareness;
+    private EnemyStagger stagger;
     public float SelectionWeight => selectionWeight;
     public bool StopMovementWhileExecuting => stopMovementWhileExecuting;
     protected abstract float Cooldown { get; }
@@ -26,6 +27,7 @@ public abstract class EnemyAttackPattern : MonoBehaviour
     protected virtual void Awake()
     {
         awareness = GetComponent<EnemyAwareness>();
+        stagger = GetComponent<EnemyStagger>();
     }
 
     public void InitializeAvailability()
@@ -36,6 +38,7 @@ public abstract class EnemyAttackPattern : MonoBehaviour
     public bool CanExecute(Transform target, int phase)
     {
         if (!isActiveAndEnabled || target == null || Time.time < nextAvailableTime ||
+            (stagger != null && stagger.IsStaggered) ||
             (awareness != null && !awareness.CanAct))
         {
             return false;
@@ -49,6 +52,7 @@ public abstract class EnemyAttackPattern : MonoBehaviour
 
     public IEnumerator Execute(Transform target)
     {
+        if (stagger != null && stagger.IsStaggered) yield break;
         nextAvailableTime = Time.time + Mathf.Max(0f, Cooldown);
         yield return ExecutePattern(target);
     }

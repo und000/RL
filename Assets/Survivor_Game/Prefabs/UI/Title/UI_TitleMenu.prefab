@@ -987,6 +987,8 @@ MonoBehaviour:
   upgradeButton: {fileID: 7472364067819735460}
   quitButton: {fileID: 3128562086406280115}
   upgradeScreen: {fileID: 0}
+  startingWeapons: {fileID: 11400000, guid: 1a0e3ceb082d4d2cb3c54c53abe6b426, type: 2}
+  weaponSelectionPrefab: {fileID: 10164, guid: 1d6b6b09b5694e0a805f1e5ca68af379, type: 3}
   gameSceneName: Game
   titleLabel: "\uC794\uC874"
   subtitleLabel: "\uAE30\uCCB4\uB294 \uBA48\uCD94\uACE0 \uCF54\uB4DC\uB294 \uB0A8\uB294\uB2E4"

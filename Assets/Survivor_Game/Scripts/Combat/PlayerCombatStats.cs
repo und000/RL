@@ -22,20 +22,26 @@ public readonly struct DamageData
     public readonly int FlatArmorPenetration;
     public readonly float TrueDamage;
     public readonly int MinimumDamage;
+    public readonly float StaggerImpact;
 
     public DamageData(
         float normalDamage,
         float armorPenetrationRate,
         int flatArmorPenetration,
         float trueDamage,
-        int minimumDamage)
+        int minimumDamage,
+        float staggerImpact = 0f)
     {
         NormalDamage = Mathf.Max(0f, normalDamage);
         ArmorPenetrationRate = Mathf.Clamp01(armorPenetrationRate);
         FlatArmorPenetration = Mathf.Max(0, flatArmorPenetration);
         TrueDamage = Mathf.Max(0f, trueDamage);
         MinimumDamage = Mathf.Max(1, minimumDamage);
+        StaggerImpact = Mathf.Max(0f, staggerImpact);
     }
+
+    public DamageData WithStaggerImpact(float impact) => new DamageData(
+        NormalDamage, ArmorPenetrationRate, FlatArmorPenetration, TrueDamage, MinimumDamage, impact);
 }
 
 [RequireComponent(typeof(PlayerLevel))]

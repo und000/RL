@@ -11,6 +11,7 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
     private EnemyAttackPattern[] patterns;
     private EnemyPhaseController phaseController;
     private EnemyMovement enemyMovement;
+    private EnemyStagger stagger;
     private Rigidbody2D body;
     private Transform target;
     private Coroutine runningPattern;
@@ -22,6 +23,7 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
         patterns = GetComponents<EnemyAttackPattern>();
         phaseController = GetComponent<EnemyPhaseController>();
         enemyMovement = GetComponent<EnemyMovement>();
+        stagger = GetComponent<EnemyStagger>();
         body = GetComponent<Rigidbody2D>();
 
         foreach (EnemyAttackPattern pattern in patterns)
@@ -41,6 +43,7 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
 
     private void Update()
     {
+        if (stagger != null && stagger.IsStaggered) return;
         if (runningPattern != null || target == null || Time.time < nextDecisionTime)
         {
             return;
@@ -146,5 +149,12 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
             enemyMovement.enabled = true;
         }
         movementDisabledByPattern = false;
+    }
+
+    public void InterruptForStagger()
+    {
+        StopRunningPattern();
+        nextDecisionTime = Time.time + decisionInterval;
+        if (body != null) body.linearVelocity = Vector2.zero;
     }
 }

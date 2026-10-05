@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 보드에 꽂는 칩 한 종류. 모양·핀·발열·효과를 한 에셋에 담는다.
+/// 보드에 꽂는 칩 한 종류. 모양·핀·효과를 한 에셋에 담는다.
 /// 회전은 배치할 때 결정되므로 여기에는 0도 기준 데이터만 넣는다.
 /// </summary>
 [CreateAssetMenu(fileName = "Chip_New", menuName = "Survivor/Core Board/Chip")]
@@ -26,12 +26,8 @@ public class ChipDefinition : ScriptableObject
     [SerializeField] private Vector2Int[] shapeCells = { Vector2Int.zero };
 
     [Header("핀")]
-    [Tooltip("전류가 드나드는 변. 1단계에서는 저장만 하고 2단계 회로 해석에서 쓴다.")]
+    [Tooltip("전류가 드나드는 변. 인접 칩의 출력핀과 입력핀이 마주 보면 연결된다.")]
     [SerializeField] private ChipPin[] pins = Array.Empty<ChipPin>();
-
-    [Header("발열")]
-    [Tooltip("패시브 1 / 증폭 2~3 / 종단 4~6 / 유니크 8 정도를 기준으로 잡는다.")]
-    [SerializeField, Min(0)] private int heat = 1;
 
     [Header("효과")]
     [SerializeField] private ChipStatModifier[] modifiers = Array.Empty<ChipStatModifier>();
@@ -45,7 +41,6 @@ public class ChipDefinition : ScriptableObject
     public ChipFamily Family => family;
     /// <summary>전류가 닿아야 작동하는 칩인가. 패시브만 예외다.</summary>
     public bool NeedsCurrent => category != ChipCategory.Passive;
-    public int Heat => heat;
     public int CellCount => shapeCells != null ? shapeCells.Length : 0;
     public IReadOnlyList<Vector2Int> ShapeCells => shapeCells;
     public IReadOnlyList<ChipPin> Pins => pins;
@@ -91,7 +86,6 @@ public class ChipDefinition : ScriptableObject
 
     private void OnValidate()
     {
-        heat = Mathf.Max(0, heat);
         NormalizeShape();
         WarnOnDetachedPins();
     }

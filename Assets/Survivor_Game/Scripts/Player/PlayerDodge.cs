@@ -71,7 +71,7 @@ public class PlayerDodge : MonoBehaviour
     private void Update()
     {
         Keyboard keyboard = Keyboard.current;
-        if (keyboard == null || LevelUpUI.IsPopupOpen)
+        if (keyboard == null || GameInputKeys.IsGameplayBlocked)
         {
             ResetSpaceInput();
             return;

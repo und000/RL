@@ -1486,12 +1486,10 @@ GameObject:
   - component: {fileID: 4365224534496954628}
   - component: {fileID: 2254662577205052147}
   - component: {fileID: 973873614834161337}
-  - component: {fileID: 6487893672280201795}
   - component: {fileID: 4535810899281548162}
   - component: {fileID: 4295413771658486563}
   - component: {fileID: 1884298564482324170}
   - component: {fileID: 4790476937533345139}
-  - component: {fileID: 7931586710733564441}
   - component: {fileID: 1553823938895648439}
   - component: {fileID: 3095888963157525182}
   - component: {fileID: 7952242510726415164}
@@ -1671,22 +1669,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   walkSpeed: 6
   runSpeed: 12
---- !u!114 &6487893672280201795
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8773493548037719947}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2846fa4e8ad26324b8bdf8fd48e6d056, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AutoWeapon
-  projectilePrefab: {fileID: 7112716578222841665, guid: f62821c9ad14bdd458eff9b432926a47, type: 3}
-  attackInterval: 0.8
-  attackRange: 8
-  projectileSpeed: 8
 --- !u!114 &4535810899281548162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1754,24 +1736,6 @@ MonoBehaviour:
   flatArmorPenetration: 0
   trueDamageRate: 0
   minimumNormalDamage: 10
---- !u!114 &7931586710733564441
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8773493548037719947}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7777777777777777777777777777777, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerLevelShockwave
-  shockwaveRadius: 7
-  shockwaveVisualPrefab: {fileID: 1003, guid: e169e8f7243a4de6a06a03603171fc8b, type: 3}
-  damage: 5
-  baseAttackKnockbackStrength: 3
-  knockbackStrengthMultiplier: 4
-  knockbackDuration: 0.35
 --- !u!114 &1553823938895648439
 MonoBehaviour:
   m_ObjectHideFlags: 0

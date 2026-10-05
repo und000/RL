@@ -94,7 +94,6 @@ public static class MetaEffectFormat
             case ChipStatKind.EnergyRegeneration: return "에너지 회복";
             case ChipStatKind.PickupRange: return "획득 범위";
             case ChipStatKind.CooldownReductionRate: return "재사용 감소";
-            case ChipStatKind.HeatCapacity: return "방열 용량";
             default: return stat.ToString();
         }
     }

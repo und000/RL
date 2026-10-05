@@ -1,0 +1,105 @@
+{
+  "mode": "Pixel-grid authoring with half-resolution nearest-neighbor output",
+  "style": "Weapon0 local visual reference: almost black body, dark navy bevel, bright electric blue cutting edge, low integrated hilt and thin curved silhouette",
+  "reference": "Assets/Survivor_Game/Resources/5_Weapon/Weapon0.png",
+  "source": "Tools/NativeWeaponPixels.cs",
+  "operations": [
+    "Author the existing Weapon0-style pixel grid",
+    "Reduce width and height by half using center-sampled nearest neighbors; round odd dimensions up",
+    "Remove fully transparent outer rows and columns after reduction",
+    "Preserve existing palette and alpha values without blending"
+  ],
+  "assets": [
+    {
+      "id": 1001,
+      "path": "Assets\\Survivor_Game\\Resources\\5_Weapon\\Numbered\\Weapon_1001_Sword.png",
+      "size": [
+        191,
+        19
+      ],
+      "ppu": 254.66666666666666,
+      "pivot": [
+        0.12,
+        0.527027027027027
+      ],
+      "worldWidth": 3,
+      "bytes": 540
+    },
+    {
+      "id": 2001,
+      "path": "Assets\\Survivor_Game\\Resources\\5_Weapon\\Numbered\\Weapon_2001_Greatsword.png",
+      "size": [
+        256,
+        26
+      ],
+      "ppu": 329.142857145,
+      "pivot": [
+        0.12,
+        0.6568627450980392
+      ],
+      "worldWidth": 4.2,
+      "bytes": 731
+    },
+    {
+      "id": 3001,
+      "path": "Assets\\Survivor_Game\\Resources\\5_Weapon\\Numbered\\Weapon_3001_Dagger.png",
+      "size": [
+        112,
+        18
+      ],
+      "ppu": 210.0,
+      "pivot": [
+        0.15,
+        0.5138888888888888
+      ],
+      "worldWidth": 1.6,
+      "bytes": 484
+    },
+    {
+      "id": 4001,
+      "path": "Assets\\Survivor_Game\\Resources\\5_Weapon\\Numbered\\Weapon_4001_Katana.png",
+      "size": [
+        247,
+        25
+      ],
+      "ppu": 308.75,
+      "pivot": [
+        0.12,
+        0.35
+      ],
+      "worldWidth": 3.2,
+      "bytes": 762
+    },
+    {
+      "id": 5001,
+      "path": "Assets\\Survivor_Game\\Resources\\5_Weapon\\Numbered\\Weapon_5001_DualBlades.png",
+      "size": [
+        167,
+        50
+      ],
+      "ppu": 278.3333333333333,
+      "pivot": [
+        0.13,
+        0.5
+      ],
+      "worldWidth": 2.4,
+      "bytes": 1169
+    },
+    {
+      "id": 6001,
+      "path": "Assets\\Survivor_Game\\Resources\\5_Weapon\\Numbered\\Weapon_6001_Gun.png",
+      "size": [
+        108,
+        51
+      ],
+      "ppu": 227.36842105395348,
+      "pivot": [
+        0.13,
+        0.7673267326732673
+      ],
+      "worldWidth": 1.9,
+      "bytes": 897
+    }
+  ],
+  "unity": "Point, Full Rect, uncompressed, no mipmaps, Max Size 256, no NPOT scaling; world lengths retained by adjusting PPU."
+}

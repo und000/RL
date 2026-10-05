@@ -21,7 +21,6 @@ MonoBehaviour:
   shapeCells:
   - {x: 0, y: 0}
   pins: []
-  heat: 1
   modifiers:
   - stat: 5
     value: 8

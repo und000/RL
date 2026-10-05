@@ -37,14 +37,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DirectionalInfluence: 1
-    - _Dissolve: 0.612
+    - _DirectionalInfluence: 0
+    - _Dissolve: 0.254
+    - _DissolveRotation: 89
     - _EdgeWidth: 0.001
     - _EnableExternalAlpha: 0
     - _HoleSoftness: 0.001
-    - _NoiseAngle: -33
-    - _NoiseArcBendAngle: 83
-    - _NoiseContrast: 1.34
+    - _NoiseAngle: -145
+    - _NoiseArcBendAngle: 80
+    - _NoiseContrast: 0.92
     - _RadialInvert: 0
     - _Reverse: 0
     - _ShapeRoundness: 0
@@ -53,10 +54,10 @@ Material:
     - _DissolveDirection: {r: 1, g: 0, b: 0, a: 0}
     - _EdgeColor: {r: 3, g: 0.45, b: 0.05, a: 1}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _NoiseArcBendCenter: {r: 0.75, g: 0, b: 0, a: 0}
+    - _NoiseArcBendCenter: {r: 0, g: 0, b: 0, a: 0}
     - _NoiseOffset: {r: 0, g: 0, b: 0, a: 0}
     - _NoiseScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
-    - _NoiseTiling: {r: -0.73, g: 0.18, b: 0, a: 0}
+    - _NoiseTiling: {r: -0.33, g: 0.09, b: 0, a: 0}
     - _RadialAspect: {r: 1, g: 1, b: 0, a: 0}
     - _RadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}

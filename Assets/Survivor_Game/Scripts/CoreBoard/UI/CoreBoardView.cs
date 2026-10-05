@@ -41,7 +41,6 @@ public class CoreBoardView : MonoBehaviour
     [SerializeField] private Color emptyCellColor = new Color(0.16f, 0.19f, 0.25f, 1f);
     [SerializeField] private Color blockedCellColor = new Color(0.07f, 0.07f, 0.08f, 1f);
     [SerializeField] private Color powerRailColor = new Color(0.95f, 0.8f, 0.25f, 1f);
-    [SerializeField] private Color heatSinkColor = new Color(0.25f, 0.55f, 0.75f, 1f);
     [SerializeField] private Color busCellColor = new Color(0.22f, 0.3f, 0.4f, 1f);
 
     [Header("색 - 칩")]
@@ -52,16 +51,7 @@ public class CoreBoardView : MonoBehaviour
     [SerializeField] private Color passiveChipColor = new Color(0.6f, 0.65f, 0.7f, 1f);
     [Tooltip("전류가 닿지 않은 칩은 이 색으로 죽는다.")]
     [SerializeField] private Color deadChipColor = new Color(0.28f, 0.3f, 0.33f, 1f);
-    [Tooltip("국소 과열로 스스로 멈춘 칩.")]
-    [SerializeField] private Color overheatedChipColor = new Color(0.62f, 0.24f, 0.22f, 1f);
-    [Tooltip("전역 과열 스로틀링으로 잠시 꺼진 칩.")]
-    [SerializeField] private Color throttledChipColor = new Color(0.7f, 0.45f, 0.2f, 1f);
-
-    [Header("색 - 히트맵")]
-    [Tooltip("국소 발열이 한계의 절반쯤일 때 칸에 깔리는 색.")]
-    [SerializeField] private Color heatWarmColor = new Color(0.95f, 0.6f, 0.2f, 0.35f);
-    [Tooltip("국소 한계를 넘어 그 구역이 정지한 칸의 색.")]
-    [SerializeField] private Color heatCriticalColor = new Color(1f, 0.25f, 0.2f, 0.6f);
+    [Header("색 - 핀")]
     [SerializeField] private Color inputPinColor = new Color(0.4f, 0.95f, 0.6f, 1f);
     [SerializeField] private Color outputPinColor = new Color(1f, 0.65f, 0.3f, 1f);
 
@@ -71,8 +61,6 @@ public class CoreBoardView : MonoBehaviour
 
     private readonly List<ChipView> boardChipViews = new List<ChipView>();
     private readonly List<Vector2Int> shapeBuffer = new List<Vector2Int>(8);
-    private readonly Dictionary<Vector2Int, Image> heatOverlays =
-        new Dictionary<Vector2Int, Image>();
     private bool needsRebuild;
 
     private RectTransform root;
@@ -82,7 +70,6 @@ public class CoreBoardView : MonoBehaviour
     private RectTransform chipLayer;
     private RectTransform trayContent;
     private RectTransform dragLayer;
-    private TMP_Text heatLabel;
     private TMP_Text circuitLabel;
     private TMP_Text hintLabel;
     private Camera uiCamera;
@@ -220,12 +207,6 @@ public class CoreBoardView : MonoBehaviour
         title.anchoredPosition = new Vector2(0f, windowSize.y * 0.5f - windowPadding.y - 15f);
         CreateLabel(title, "코어 보드", 22f, TextAlignmentOptions.Left);
 
-        heatLabel = CreateLabel(
-            CreateChild("Heat", window), string.Empty, 18f, TextAlignmentOptions.Right);
-        RectTransform heatRect = heatLabel.rectTransform;
-        heatRect.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 30f);
-        heatRect.anchoredPosition = title.anchoredPosition;
-
         boardArea = CreateChild("BoardArea", window);
         boardArea.sizeDelta = boardPixelSize;
         boardArea.anchoredPosition = new Vector2(
@@ -277,10 +258,6 @@ public class CoreBoardView : MonoBehaviour
                 slot.anchoredPosition = CellCenterLocal(cell);
                 CreateImage(slot, GetCellColor(layout.GetCell(cell)), false);
 
-                // 발열 히트맵은 칸 위에 한 겹 덮어 칩보다 아래에 깔린다.
-                RectTransform overlay = CreateChild("Heat", slot);
-                overlay.sizeDelta = slot.sizeDelta;
-                heatOverlays[cell] = CreateImage(overlay, Color.clear, false);
             }
         }
     }
@@ -291,7 +268,6 @@ public class CoreBoardView : MonoBehaviour
         {
             case BoardCellType.Blocked: return blockedCellColor;
             case BoardCellType.PowerRail: return powerRailColor;
-            case BoardCellType.HeatSink: return heatSinkColor;
             case BoardCellType.Bus: return busCellColor;
             default: return emptyCellColor;
         }
@@ -304,7 +280,7 @@ public class CoreBoardView : MonoBehaviour
     // 다시 그리기 -------------------------------------------------------
 
     /// <summary>
-    /// 전투 중 스로틀링으로도 보드가 계속 바뀌므로, 창이 닫혀 있으면 다시 그리지 않고
+    /// 보드 배치가 바뀌어도 창이 닫혀 있으면 다시 그리지 않고
     /// 표시만 밀린 것으로 두었다가 열 때 한 번에 갱신한다.
     /// </summary>
     private void HandleBoardChanged(CoreBoardStats stats)
@@ -327,7 +303,6 @@ public class CoreBoardView : MonoBehaviour
         CancelDrag();
 
         if (panel != null) DetachAndDestroy(panel);
-        heatOverlays.Clear();
         boardChipViews.Clear();
 
         BuildFrame();
@@ -363,12 +338,10 @@ public class CoreBoardView : MonoBehaviour
         }
     }
 
-    /// <summary>왜 안 도는지가 색으로 구분돼야 한다. 과열·스로틀·무전원이 서로 다른 색이다.</summary>
+    /// <summary>전류가 닿아 작동하는 칩과 무전원 칩을 색으로 구분한다.</summary>
     private Color ResolveChipColor(PlacedChip placed)
     {
         CoreBoardState state = board.State;
-        if (state.IsThrottled(placed)) return throttledChipColor;
-        if (state.IsShutDownByHeat(placed)) return overheatedChipColor;
         if (state.IsEnergized(placed)) return GetChipColor(placed.Chip.Category);
         return deadChipColor;
     }
@@ -448,18 +421,6 @@ public class CoreBoardView : MonoBehaviour
 
     private void RefreshLabels()
     {
-        RefreshHeatMap();
-
-        if (heatLabel != null)
-        {
-            CoreBoardState state = board.State;
-            string overclockMark = state.OverclockActive ? "  오버클럭 ON" : string.Empty;
-            heatLabel.text = $"발열 {state.TotalHeat} / {state.HeatCapacity}{overclockMark}";
-            heatLabel.color = state.IsOverheated
-                ? new Color(1f, 0.4f, 0.35f)
-                : new Color(0.75f, 0.85f, 0.95f);
-        }
-
         if (circuitLabel != null)
         {
             List<ResolvedCircuit> circuits = board.State.Solution.Circuits;
@@ -483,33 +444,11 @@ public class CoreBoardView : MonoBehaviour
         if (hintLabel != null)
         {
             hintLabel.text = EditingAllowed
-                ? "드래그로 배치 · R 회전 · 우클릭으로 빼기 · Q 오버클럭"
+                ? "드래그로 배치 · R 회전 · 우클릭으로 빼기"
                 : "전투 중에는 배치를 바꿀 수 없습니다";
             hintLabel.color = EditingAllowed
                 ? new Color(0.55f, 0.62f, 0.7f)
                 : new Color(1f, 0.55f, 0.4f);
-        }
-    }
-
-    /// <summary>
-    /// 칸마다 3x3 국소 발열을 색으로 깐다. 한계를 넘은 칸은 빨갛게 굳고,
-    /// 그 위의 칩이 왜 멈췄는지 배치만 보고도 읽히게 한다.
-    /// </summary>
-    private void RefreshHeatMap()
-    {
-        CoreBoardState state = board.State;
-        float limit = Mathf.Max(0.01f, state.Layout.LocalHeatLimit);
-
-        foreach (KeyValuePair<Vector2Int, Image> pair in heatOverlays)
-        {
-            float ratio = state.GetLocalHeat(pair.Key) / limit;
-            Color color;
-
-            if (ratio > 1f) color = heatCriticalColor;
-            else if (ratio <= 0f) color = Color.clear;
-            else color = Color.Lerp(Color.clear, heatWarmColor, ratio);
-
-            pair.Value.color = color;
         }
     }
 

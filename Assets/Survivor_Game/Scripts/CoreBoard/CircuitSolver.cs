@@ -114,15 +114,7 @@ public sealed class CircuitSolution
 /// </summary>
 public static class CircuitSolver
 {
-    public static CircuitSolution Solve(CoreBoardState state, CircuitTuning tuning) =>
-        Solve(state, tuning, null);
-
-    /// <summary>
-    /// disabled에 담긴 칩은 없는 셈 치지 않고 "멈춘 칩"으로 다룬다.
-    /// 자리는 그대로 차지하므로 전류가 그 칸을 통과하지 못한다.
-    /// </summary>
-    public static CircuitSolution Solve(
-        CoreBoardState state, CircuitTuning tuning, HashSet<int> disabled)
+    public static CircuitSolution Solve(CoreBoardState state, CircuitTuning tuning)
     {
         CircuitSolution solution = new CircuitSolution();
         if (state == null || state.Layout == null) return solution;
@@ -133,22 +125,17 @@ public static class CircuitSolver
         foreach (PlacedChip placed in state.Placements)
         {
             if (placed.Chip == null || placed.Chip.Category != ChipCategory.Source) continue;
-            if (IsDisabled(disabled, placed)) continue;
-            Traverse(state, tuning, solution, placed, chain, 1f, disabled);
+            Traverse(state, tuning, solution, placed, chain, 1f);
         }
 
         // 패시브 칩은 전류와 무관하게 항상 제값을 낸다.
         foreach (PlacedChip placed in state.Placements)
         {
             if (placed.Chip == null || placed.Chip.NeedsCurrent) continue;
-            if (IsDisabled(disabled, placed)) continue;
             solution.RaiseMultiplier(placed.Id, 1f);
         }
         return solution;
     }
-
-    private static bool IsDisabled(HashSet<int> disabled, PlacedChip chip) =>
-        disabled != null && disabled.Contains(chip.Id);
 
     private static void Traverse(
         CoreBoardState state,
@@ -156,8 +143,7 @@ public static class CircuitSolver
         CircuitSolution solution,
         PlacedChip current,
         List<PlacedChip> chain,
-        float efficiency,
-        HashSet<int> disabled)
+        float efficiency)
     {
         chain.Add(current);
         solution.RaiseMultiplier(current.Id, efficiency);
@@ -169,7 +155,7 @@ public static class CircuitSolver
             return;
         }
 
-        List<PlacedChip> next = FindDownstream(state, current, disabled);
+        List<PlacedChip> next = FindDownstream(state, current);
         float branchEfficiency = efficiency;
         if (current.Chip.Category == ChipCategory.Junction && next.Count > 1)
         {
@@ -180,7 +166,7 @@ public static class CircuitSolver
         {
             // 같은 칩을 두 번 밟으면 고리가 되므로 끊는다.
             if (chain.Contains(downstream)) continue;
-            Traverse(state, tuning, solution, downstream, chain, branchEfficiency, disabled);
+            Traverse(state, tuning, solution, downstream, chain, branchEfficiency);
         }
         chain.RemoveAt(chain.Count - 1);
     }
@@ -213,7 +199,7 @@ public static class CircuitSolver
 
     /// <summary>이 칩의 출력핀이 실제로 물려 있는 다음 칩들.</summary>
     private static List<PlacedChip> FindDownstream(
-        CoreBoardState state, PlacedChip current, HashSet<int> disabled)
+        CoreBoardState state, PlacedChip current)
     {
         List<PlacedChip> found = new List<PlacedChip>(2);
         List<ChipPin> pins = new List<ChipPin>(4);
@@ -226,8 +212,6 @@ public static class CircuitSolver
             Vector2Int from = current.Origin + pin.cell;
             PlacedChip target = FollowWire(state, from, pin.direction, out Vector2Int landing);
             if (target == null || target == current) continue;
-            // 멈춘 칩은 자리를 막고 있으므로 전류가 그 앞에서 끊긴다.
-            if (IsDisabled(disabled, target)) continue;
             if (!HasInputPinFacing(target, landing, pin.direction.Opposite())) continue;
             if (!found.Contains(target)) found.Add(target);
         }

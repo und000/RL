@@ -372,6 +372,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomInstance
   kind: 2
+  designId: Room_Elite
+  floorExitOffset: {x: 0, y: -8}
   cellSize: {x: 48, y: 32}
   doors:
   - {fileID: 231291197410029551}

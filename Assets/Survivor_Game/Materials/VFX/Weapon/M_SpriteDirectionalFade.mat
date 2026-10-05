@@ -38,7 +38,7 @@ Material:
     - _EnableExternalAlpha: 0
     - _FadePower: 1
     - _FadeProgress: 0.334
-    - _FadeSoftness: 0.12
+    - _FadeSoftness: 0.234
     - _Reverse: 0
     - _WiperFade: 1
     - _WiperReverseRotation: 1

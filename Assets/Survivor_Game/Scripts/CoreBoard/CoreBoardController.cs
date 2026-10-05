@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// 씬에 하나 두는 코어 보드의 주인. 레이아웃으로 상태를 만들고,
@@ -27,17 +26,6 @@ public class CoreBoardController : MonoBehaviour
     [Header("회로 튜닝")]
     [SerializeField] private CircuitTuning circuitTuning = CircuitTuning.Default;
 
-    [Header("오버클럭")]
-    [SerializeField] private OverclockSettings overclock = OverclockSettings.Default;
-    [Tooltip("전투 중 오버클럭을 켜고 끄는 키.")]
-    [SerializeField] private Key overclockKey = Key.Q;
-
-    [Header("과열 스로틀링")]
-    [Tooltip("총 발열이 방열 용량을 넘는 동안, 이 간격마다 회로 하나가 꺼진다.")]
-    [SerializeField, Min(0.2f)] private float throttleInterval = 3f;
-    [Tooltip("한 번 꺼진 회로가 다시 살아나기까지 걸리는 시간.")]
-    [SerializeField, Min(0.2f)] private float throttleDuration = 2f;
-
     [Tooltip("보드 변경으로 자리를 잃은 칩이 돌아갈 곳. 비워 두면 씬에서 찾는다.")]
     [SerializeField] private ChipInventory inventory;
 
@@ -51,22 +39,16 @@ public class CoreBoardController : MonoBehaviour
     /// <summary>배치가 바뀔 때마다 새로 합산된 스탯과 함께 호출된다.</summary>
     public event Action<CoreBoardStats> OnBoardChanged;
 
-    /// <summary>과열로 회로 하나가 강제로 꺼진 순간. HUD 연출용.</summary>
-    public event Action<PlacedChip> OnCircuitThrottled;
-
     /// <summary>보드 지형이 넓어지거나 칸이 수리됐을 때. UI가 다시 그리도록 알린다.</summary>
     public event Action OnLayoutChanged;
 
-    private readonly Dictionary<int, float> throttleExpiry = new Dictionary<int, float>();
     private CoreBoardLayout runtimeLayout;
     private CoreBoardState state;
     private CoreBoardStats stats = new CoreBoardStats();
-    private float nextThrottleTime;
 
     public CoreBoardState State => state;
     public CoreBoardStats Stats => stats;
     public bool IsReady => state != null;
-    public bool IsOverclocked => state != null && state.OverclockActive;
 
     private void Awake()
     {
@@ -78,7 +60,6 @@ public class CoreBoardController : MonoBehaviour
         }
 
         circuitTuning.Normalize();
-        overclock.Normalize();
 
         if (inventory == null) inventory = GetComponent<ChipInventory>();
 
@@ -87,7 +68,6 @@ public class CoreBoardController : MonoBehaviour
         runtimeLayout.name = layout.name + " (런타임)";
 
         state = new CoreBoardState(runtimeLayout, circuitTuning);
-        state.SetOverclockSettings(overclock);
         PlaceStartingChips();
         Refresh();
     }
@@ -95,103 +75,6 @@ public class CoreBoardController : MonoBehaviour
     private void OnDestroy()
     {
         if (runtimeLayout != null) Destroy(runtimeLayout);
-    }
-
-    private void Update()
-    {
-        if (state == null) return;
-
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard[overclockKey].wasPressedThisFrame)
-        {
-            SetOverclock(!state.OverclockActive);
-        }
-
-        UpdateThrottling();
-    }
-
-    public void SetOverclock(bool active)
-    {
-        if (state == null || state.OverclockActive == active) return;
-        state.SetOverclock(active);
-        Refresh();
-    }
-
-    /// <summary>
-    /// 총 발열이 방열 용량을 넘는 동안 일정 간격으로 회로 하나를 잠시 끈다.
-    /// 끄면 열이 내려가 다시 붙고, 그래도 넘치면 또 꺼진다.
-    /// </summary>
-    private void UpdateThrottling()
-    {
-        bool changed = ExpireThrottles();
-
-        if (state.IsOverheated)
-        {
-            if (Time.time >= nextThrottleTime)
-            {
-                nextThrottleTime = Time.time + throttleInterval;
-                changed |= TryThrottleOneCircuit();
-            }
-        }
-        else
-        {
-            // 열이 가라앉으면 다음 발동까지 다시 한 박자 쉰다.
-            nextThrottleTime = Time.time + throttleInterval;
-        }
-
-        if (!changed) return;
-        state.SetThrottled(throttleExpiry.Keys);
-        Refresh();
-    }
-
-    private bool ExpireThrottles()
-    {
-        if (throttleExpiry.Count == 0) return false;
-
-        List<int> expired = null;
-        foreach (KeyValuePair<int, float> pair in throttleExpiry)
-        {
-            // 그 사이 뽑혀 사라진 칩도 함께 걷어낸다.
-            if (Time.time < pair.Value && state.GetChip(pair.Key) != null) continue;
-            if (expired == null) expired = new List<int>();
-            expired.Add(pair.Key);
-        }
-
-        if (expired == null) return false;
-        foreach (int id in expired) throttleExpiry.Remove(id);
-        return true;
-    }
-
-    /// <summary>살아 있는 회로 중 하나를 골라 그 종단 칩을 끈다.</summary>
-    private bool TryThrottleOneCircuit()
-    {
-        List<PlacedChip> candidates = new List<PlacedChip>();
-
-        foreach (ResolvedCircuit circuit in state.Solution.Circuits)
-        {
-            PlacedChip terminal = circuit.Terminal;
-            if (terminal != null && !throttleExpiry.ContainsKey(terminal.Id))
-            {
-                candidates.Add(terminal);
-            }
-        }
-
-        // 종단이 없는 배치라면 전류를 쓰는 아무 칩이나 끈다.
-        if (candidates.Count == 0)
-        {
-            foreach (PlacedChip placed in state.Placements)
-            {
-                if (placed.Chip == null || !placed.Chip.NeedsCurrent) continue;
-                if (!state.IsEnergized(placed) || throttleExpiry.ContainsKey(placed.Id)) continue;
-                candidates.Add(placed);
-            }
-        }
-        if (candidates.Count == 0) return false;
-
-        PlacedChip victim = candidates[UnityEngine.Random.Range(0, candidates.Count)];
-        throttleExpiry[victim.Id] = Time.time + throttleDuration;
-        OnCircuitThrottled?.Invoke(victim);
-        return true;
     }
 
     private void PlaceStartingChips()
@@ -245,9 +128,6 @@ public class CoreBoardController : MonoBehaviour
     /// <summary>빈 칸 하나를 전원 단자로 바꾼다. 회로를 하나 더 굴릴 수 있게 된다.</summary>
     public bool AddPowerRail() => ConvertFreeCell(BoardCellType.PowerRail);
 
-    /// <summary>빈 칸 하나를 방열 셀로 바꾼다.</summary>
-    public bool AddHeatSink() => ConvertFreeCell(BoardCellType.HeatSink);
-
     /// <summary>빈 칸 하나를 버스 칸으로 바꿔 전류가 멀리 뻗게 한다.</summary>
     public bool AddBusCell() => ConvertFreeCell(BoardCellType.Bus);
 
@@ -289,9 +169,6 @@ public class CoreBoardController : MonoBehaviour
         mutateLayout();
 
         state = new CoreBoardState(runtimeLayout, circuitTuning);
-        state.SetOverclockSettings(overclock);
-        state.SetOverclock(false);
-        throttleExpiry.Clear();
 
         foreach (PlacedChip placed in snapshot)
         {
@@ -347,9 +224,7 @@ public class CoreBoardController : MonoBehaviour
         if (logStatsOnChange)
         {
             Debug.Log(
-                $"[코어 보드] 발열 {state.TotalHeat}/{state.HeatCapacity}" +
-                $"{(state.OverclockActive ? " (오버클럭)" : string.Empty)} · " +
-                $"회로 {state.Solution.Circuits.Count}개 · {stats}", this);
+                $"[코어 보드] 회로 {state.Solution.Circuits.Count}개 · {stats}", this);
             foreach (ResolvedCircuit circuit in state.Solution.Circuits)
             {
                 Debug.Log("[회로] " + circuit.Describe(), this);

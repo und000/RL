@@ -1,6 +1,61 @@
 using System;
 using UnityEngine;
 
+[Flags]
+public enum WeaponFamily
+{
+    None = 0,
+    Sword = 1,
+    Dagger = 2,
+    Greatsword = 4,
+    // Keep existing serialized families; new weapon menus offer the six current families.
+    Spear = 8,
+    Other = 16,
+    Katana = 32,
+    DualBlades = 64,
+    Gun = 128,
+    All = Sword | Dagger | Greatsword | Spear | Other | Katana | DualBlades | Gun
+}
+
+public static class WeaponFamilyUtility
+{
+    public static int NumberBase(WeaponFamily family)
+    {
+        switch (family)
+        {
+            case WeaponFamily.Sword: return 1000;
+            case WeaponFamily.Greatsword: return 2000;
+            case WeaponFamily.Dagger: return 3000;
+            case WeaponFamily.Katana: return 4000;
+            case WeaponFamily.DualBlades: return 5000;
+            case WeaponFamily.Gun: return 6000;
+            default: return 0; // Legacy families have no assigned number range.
+        }
+    }
+
+    public static bool IsSingle(WeaponFamily family)
+    {
+        int value = (int)family;
+        return value > 0 && (value & (value - 1)) == 0 && (family & WeaponFamily.All) == family;
+    }
+
+    public static string Label(WeaponFamily families)
+    {
+        if (families == WeaponFamily.All) return "모든 무기군";
+        if (families == WeaponFamily.None) return "사용 가능한 무기군 없음";
+        var names = new System.Collections.Generic.List<string>();
+        if ((families & WeaponFamily.Sword) != 0) names.Add("한손검");
+        if ((families & WeaponFamily.Greatsword) != 0) names.Add("대검");
+        if ((families & WeaponFamily.Dagger) != 0) names.Add("단검");
+        if ((families & WeaponFamily.Katana) != 0) names.Add("도");
+        if ((families & WeaponFamily.DualBlades) != 0) names.Add("쌍검");
+        if ((families & WeaponFamily.Gun) != 0) names.Add("총");
+        if ((families & WeaponFamily.Spear) != 0) names.Add("창(기존)");
+        if ((families & WeaponFamily.Other) != 0) names.Add("기타(기존)");
+        return string.Join(" / ", names);
+    }
+}
+
 public enum WeaponKnockbackDirection
 {
     AwayFromAttackOrigin,
@@ -67,6 +122,8 @@ public class WeaponHitWindow
     [Tooltip("Hit detection end time in base animation seconds.")]
     [Min(0f)] public float endTime = 0.35f;
     [Min(0f)] public float damageMultiplier = 1f;
+    [Tooltip("이 타격 구간의 충격력. 적의 충격 게이지에 쌓이는 수치로, 피해량과 독립적이며 투사체는 한 발마다 적용합니다.")]
+    [InspectorName("충격력"), Min(0f)] public float staggerImpact = 30f;
     [Min(0f)] public float knockbackStrength = 3f;
     [Min(0f)] public float knockbackDuration = 0.2f;
     public WeaponKnockbackDirection knockbackDirection =
@@ -78,6 +135,7 @@ public class WeaponHitWindow
         startTime = Mathf.Clamp(startTime, 0f, animationDuration);
         endTime = Mathf.Clamp(Mathf.Max(startTime, endTime), startTime, animationDuration);
         damageMultiplier = Mathf.Max(0f, damageMultiplier);
+        staggerImpact = Mathf.Max(0f, staggerImpact);
         knockbackStrength = Mathf.Max(0f, knockbackStrength);
         knockbackDuration = Mathf.Max(0f, knockbackDuration);
     }
@@ -86,8 +144,14 @@ public class WeaponHitWindow
 [Serializable]
 public class WeaponAttackStep
 {
+    [Header("Projectile Attack")]
+    [Tooltip("켜면 Hit Windows의 시작마다 투사체를 한 번 발사하며 근접 히트박스는 사용하지 않습니다.")]
+    public bool fireProjectile;
+    [Range(1, 12)] public int projectilesPerShot = 1;
+    [Range(0f, 90f)] public float projectileSpreadAngle;
+
     [Header("Forward Movement")]
-    [Tooltip("Signed distance along the aim direction captured when the animation starts. Positive moves forward, negative moves backward, zero disables movement.")]
+    [Tooltip("Signed distance moved when the StartAttackMovement animation event fires. Direction is captured when the animation starts. Positive moves forward, negative moves backward, zero disables movement.")]
     public float movementDistance;
     [Tooltip("Movement time at weapon speed 1. Scales with weapon attack speed.")]
     [Min(0.01f)] public float movementDuration = 0.1f;
@@ -117,6 +181,8 @@ public class WeaponAttackStep
             animatorStateName = $"Attack{index + 1}";
         }
 
+        projectilesPerShot = Mathf.Clamp(projectilesPerShot, 1, 12);
+        projectileSpreadAngle = Mathf.Clamp(projectileSpreadAngle, 0f, 90f);
         startDelay = Mathf.Max(0f, startDelay);
         movementDuration = Mathf.Max(0.01f, movementDuration);
         duration = Mathf.Max(0.05f, duration);
@@ -140,12 +206,32 @@ public class WeaponAttackStep
 [CreateAssetMenu(fileName = "WeaponStats_New", menuName = "Survivor/Weapons/Weapon Profile")]
 public class WeaponStatsProfile : ScriptableObject
 {
+    [Header("Identity")]
+    [Tooltip("무기군별 번호: 한손검 1001~1999, 대검 2001~2999, 단검 3001~3999, 도 4001~4999, 쌍검 5001~5999, 총 6001~6999. 0은 기존 미분류 데이터.")]
+    [SerializeField, Min(0)] private int weaponId;
+    [SerializeField] private Sprite icon;
+
+    [Header("Projectile Weapon")]
+    [Tooltip("Fire Projectile 공격 단계에서 사용하는 투사체. 기존 자동사격과 별도로 클릭 공격에서 발사합니다.")]
+    [SerializeField] private Projectile projectilePrefab;
+    [SerializeField, Min(0.1f)] private float projectileSpeed = 35f;
+    [SerializeField] private Vector2 projectileSpawnOffset = new Vector2(3.5f, 0f);
+
     [Header("Weapon Prefab")]
     [SerializeField] private GameObject weaponPrefab;
     [Tooltip("화면에 띄울 무기 이름. 비우면 에셋 이름을 쓴다.")]
     [SerializeField] private string displayName;
     [Tooltip("무기 등급. 바닥에 떨어져 있을 때의 연출 색이 여기서 나온다.")]
     [SerializeField] private ItemGrade grade = ItemGrade.Standard;
+
+    [Header("Special Attack Equipment")]
+    [Tooltip("이 무기가 속하는 무기군 하나를 선택합니다. 특수공격의 허용 무기군과 비교합니다.")]
+    [SerializeField] private WeaponFamily weaponFamily = WeaponFamily.Sword;
+    [SerializeField] private WeaponSkillProfile defaultSpecialAttack;
+    [Tooltip("Unique weapon: its default special attack cannot be replaced or extracted.")]
+    [SerializeField] private bool lockSpecialAttack;
+    [Tooltip("Original clip assigned to the SpecialAttack state. Equipped skills override this slot only.")]
+    [SerializeField] private AnimationClip specialAttackSlotClip;
 
     [Header("Core Attack Stats")]
     [Tooltip("Weapon damage added to the character and equipment base attack.")]
@@ -195,13 +281,25 @@ public class WeaponStatsProfile : ScriptableObject
     [SerializeField] private WeaponAttackStep heavyAttack = new WeaponAttackStep();
 
     [Header("Special Attack (Right Click)")]
-    [SerializeField] private bool useSpecialAttack;
-    [SerializeField] private WeaponAttackStep specialAttack = new WeaponAttackStep { animatorStateName = "SpecialAttack" };
+    [SerializeField, HideInInspector] private bool useSpecialAttack;
+    [SerializeField, HideInInspector] private WeaponAttackStep specialAttack = new WeaponAttackStep { animatorStateName = "SpecialAttack" };
 
     [Header("Weapon Skills")]
     [Tooltip("Optional weapon-specific skills. Each skill owns its own animation step list.")]
     [SerializeField] private WeaponSkillProfile[] weaponSkills = Array.Empty<WeaponSkillProfile>();
 
+    public int WeaponId => weaponId;
+    public Sprite Icon => icon;
+    public Projectile ProjectilePrefab => projectilePrefab;
+    public float ProjectileSpeed => Mathf.Max(0.1f, projectileSpeed);
+    public Vector2 ProjectileSpawnOffset => projectileSpawnOffset;
+    public bool HasValidWeaponId => weaponId > WeaponFamilyUtility.NumberBase(weaponFamily) &&
+        WeaponFamilyUtility.NumberBase(weaponFamily) > 0 && weaponId < WeaponFamilyUtility.NumberBase(weaponFamily) + 1000;
+    public WeaponFamily Family => weaponFamily;
+    public WeaponSkillProfile DefaultSpecialAttack => defaultSpecialAttack;
+    public bool LockSpecialAttack => lockSpecialAttack;
+    public AnimationClip SpecialAttackSlotClip => specialAttackSlotClip;
+    public string SpecialAttackStateName => specialAttack != null ? specialAttack.animatorStateName : "SpecialAttack";
     public float BaseDamage => baseDamage;
     public float AttackSpeedMultiplier => Mathf.Max(0.01f, attackSpeedMultiplier);
     public float DamageMultiplier => damageMultiplier;
@@ -225,11 +323,17 @@ public class WeaponStatsProfile : ScriptableObject
             ? heavyAttack
             : null;
     public bool HasHeavyAttack => HeavyAttack != null;
-    public WeaponAttackStep SpecialAttack => useSpecialAttack ? specialAttack : null;
+    public WeaponAttackStep SpecialAttack => defaultSpecialAttack != null
+        ? defaultSpecialAttack.SpecialAttack
+        : useSpecialAttack && specialAttack != null &&
+        !string.IsNullOrWhiteSpace(specialAttack.animatorStateName)
+            ? specialAttack
+            : null;
     public bool HasSpecialAttack => SpecialAttack != null;
     public int HeavyAttackEnergyCost => Mathf.Max(0, heavyAttackEnergyCost);
 
     public int BasicAttackCount => basicAttackSteps != null ? basicAttackSteps.Length : 0;
+
     public int SkillCount => weaponSkills != null ? weaponSkills.Length : 0;
     public WeaponSkillProfile[] WeaponSkills => weaponSkills;
 

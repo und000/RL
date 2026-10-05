@@ -7,7 +7,19 @@ public class GeneratedFloor
     public readonly List<RoomInstance> Rooms = new List<RoomInstance>();
     public RoomInstance StartRoom;
     public RoomInstance BossRoom;
+    public RoomInstance ExitRoom;
+    public FloorExit Exit;
     public Transform Root;
+
+    public bool IsCombatCleared
+    {
+        get
+        {
+            foreach (RoomInstance room in Rooms)
+                if (room != null && room.IsCombatRoom && !room.IsCleared) return false;
+            return Rooms.Count > 0;
+        }
+    }
 
     public int ClearedCount
     {
@@ -29,6 +41,34 @@ public class GeneratedFloor
 /// </summary>
 public static class FloorGenerator
 {
+    /// <summary>단일 방 생성이 필요한 별도 모드용. 현재 런은 Generate로 여러 방을 연결한다.</summary>
+    public static GeneratedFloor GenerateRoom(FloorProfile profile, RoomInstance prefab,
+        RoomRuntimeContext context, Transform parent)
+    {
+        if (profile == null || prefab == null || context == null || context.ExitPrefab == null)
+        {
+            Debug.LogError("선택한 방과 출구 프리팹이 필요합니다.");
+            return null;
+        }
+        var root = new GameObject("Stage_" + profile.DisplayName);
+        root.transform.SetParent(parent, false);
+        RoomInstance room = Object.Instantiate(prefab, Vector3.zero, Quaternion.identity, root.transform);
+        room.name = "Room_" + prefab.Kind;
+        room.Initialize(Vector2Int.zero, context);
+        room.FinalizeDoors();
+        var floor = new GeneratedFloor
+        {
+            Root = root.transform,
+            StartRoom = room,
+            ExitRoom = room,
+            BossRoom = prefab.Kind == RoomKind.Boss ? room : null,
+            Exit = Object.Instantiate(context.ExitPrefab, room.FloorExitPosition,
+                Quaternion.identity, room.transform)
+        };
+        floor.Rooms.Add(room);
+        return floor;
+    }
+
     public static GeneratedFloor Generate(
         FloorProfile profile,
         RoomRuntimeContext context,
@@ -40,8 +80,18 @@ public static class FloorGenerator
             return null;
         }
 
-        List<Vector2Int> cells = PickCells(profile.RoomCount);
-        Dictionary<Vector2Int, RoomKind> kinds = AssignKinds(cells, profile);
+        if (context == null || context.ExitPrefab == null)
+        {
+            Debug.LogError("층 출구 프리팹이 없어 맵을 생성할 수 없습니다.");
+            return null;
+        }
+        if (!TryPlan(profile, out List<Vector2Int> cells,
+            out Dictionary<Vector2Int, RoomKind> kinds,
+            out Dictionary<Vector2Int, RoomInstance> prefabs))
+        {
+            Debug.LogError($"'{profile.DisplayName}' 맵의 거리·디자인·방 수 제한을 만족할 수 없습니다. 방 수와 디자인 후보를 확인하세요.", profile);
+            return null;
+        }
 
         GameObject rootObject = new GameObject("Floor_" + profile.DisplayName);
         if (parent != null) rootObject.transform.SetParent(parent, false);
@@ -52,18 +102,12 @@ public static class FloorGenerator
         Dictionary<Vector2Int, RoomInstance> placed =
             new Dictionary<Vector2Int, RoomInstance>();
         Vector2 grid = profile.GridCellSize;
+        Vector2Int exitCell = FindFarthestCell(cells);
 
         foreach (Vector2Int cell in cells)
         {
             RoomKind kind = kinds[cell];
-            RoomInstance prefab = profile.PickRoomPrefab(kind);
-            if (prefab == null)
-            {
-                Debug.LogError(
-                    $"FloorProfile '{profile.DisplayName}'에 {kind} 방 프리팹이 없습니다.",
-                    profile);
-                continue;
-            }
+            RoomInstance prefab = prefabs[cell];
 
             Vector3 position = new Vector3(cell.x * grid.x, cell.y * grid.y, 0f);
             RoomInstance room = Object.Instantiate(
@@ -75,16 +119,97 @@ public static class FloorGenerator
             floor.Rooms.Add(room);
             if (kind == RoomKind.Start) floor.StartRoom = room;
             if (kind == RoomKind.Boss) floor.BossRoom = room;
+            if (cell == exitCell) floor.ExitRoom = room;
         }
 
         LinkDoors(placed);
         foreach (RoomInstance room in floor.Rooms) room.FinalizeDoors();
 
-        if (floor.StartRoom == null && floor.Rooms.Count > 0)
-        {
-            floor.StartRoom = floor.Rooms[0];
-        }
+        floor.Exit = Object.Instantiate(context.ExitPrefab, floor.ExitRoom.FloorExitPosition,
+            Quaternion.identity, floor.ExitRoom.transform);
         return floor;
+    }
+
+    // 검증된 배치 계획을 먼저 만들고 나서만 실제 방을 생성한다.
+    internal static bool TryPlan(FloorProfile profile, out List<Vector2Int> cells,
+        out Dictionary<Vector2Int, RoomKind> kinds,
+        out Dictionary<Vector2Int, RoomInstance> prefabs)
+    {
+        cells = null;
+        kinds = null;
+        prefabs = null;
+        if (profile.EliteRoomCount + profile.TreasureRoomCount + profile.ShopRoomCount > profile.RoomCount - 2)
+            return false;
+
+        for (int attempt = 0; attempt < profile.GenerationAttempts; attempt++)
+        {
+            List<Vector2Int> candidateCells = PickCells(profile.RoomCount);
+            Dictionary<Vector2Int, RoomKind> candidateKinds = AssignKinds(candidateCells, profile);
+            if (candidateKinds == null) continue;
+            if (!TryAssignPrefabs(candidateCells, candidateKinds, profile, out var candidatePrefabs)) continue;
+            cells = candidateCells;
+            kinds = candidateKinds;
+            prefabs = candidatePrefabs;
+            return true;
+        }
+        return false;
+    }
+
+    private static bool TryAssignPrefabs(List<Vector2Int> cells,
+        Dictionary<Vector2Int, RoomKind> kinds, FloorProfile profile,
+        out Dictionary<Vector2Int, RoomInstance> selected)
+    {
+        selected = new Dictionary<Vector2Int, RoomInstance>();
+        var options = new Dictionary<Vector2Int, List<RoomInstance>>();
+        var order = new List<Vector2Int>(cells);
+        foreach (Vector2Int cell in cells)
+        {
+            List<RoomInstance> candidates = profile.GetRoomPrefabs(kinds[cell]);
+            // 존재하는 모든 이웃과 실제 문으로 연결할 수 있어야 한다.
+            candidates.RemoveAll(prefab => !HasRequiredDoors(prefab, cell, kinds));
+            if (candidates.Count == 0) return false;
+            Shuffle(candidates);
+            options[cell] = candidates;
+        }
+        // 선택지가 적은 방부터 배정하고, 실패하면 앞선 디자인 선택을 되돌린다.
+        order.Sort((a, b) => options[a].Count.CompareTo(options[b].Count));
+        int searchBudget = 10000;
+        return AssignPrefabAt(0, order, options, selected, ref searchBudget);
+    }
+
+    private static bool HasRequiredDoors(RoomInstance prefab, Vector2Int cell,
+        Dictionary<Vector2Int, RoomKind> kinds)
+    {
+        foreach (RoomDirection direction in RoomDirectionUtility.All)
+            if (kinds.ContainsKey(cell + direction.ToOffset()) && prefab.GetDoor(direction) == null) return false;
+        return true;
+    }
+
+    private static bool AssignPrefabAt(int index, List<Vector2Int> order,
+        Dictionary<Vector2Int, List<RoomInstance>> options,
+        Dictionary<Vector2Int, RoomInstance> selected, ref int searchBudget)
+    {
+        if (index == order.Count) return true;
+        if (--searchBudget < 0) return false;
+        Vector2Int cell = order[index];
+        foreach (RoomInstance prefab in options[cell])
+        {
+            bool repeated = false;
+            foreach (RoomDirection direction in RoomDirectionUtility.All)
+            {
+                if (selected.TryGetValue(cell + direction.ToOffset(), out RoomInstance neighbour) &&
+                    string.Equals(prefab.DesignId, neighbour.DesignId, System.StringComparison.Ordinal))
+                {
+                    repeated = true;
+                    break;
+                }
+            }
+            if (repeated) continue;
+            selected[cell] = prefab;
+            if (AssignPrefabAt(index + 1, order, options, selected, ref searchBudget)) return true;
+            selected.Remove(cell);
+        }
+        return false;
     }
 
     /// <summary>시작 칸에서 뻗어나가며 방이 놓일 그리드 칸을 고른다.</summary>
@@ -122,7 +247,7 @@ public static class FloorGenerator
         return ordered;
     }
 
-    /// <summary>시작에서 가장 먼 방을 보스 방으로 삼고, 나머지에 역할을 나눠준다.</summary>
+    /// <summary>시작에서 가장 먼 전투방에 출구를 두고, 나머지에 역할을 나눠준다.</summary>
     private static Dictionary<Vector2Int, RoomKind> AssignKinds(
         List<Vector2Int> cells, FloorProfile profile)
     {
@@ -132,7 +257,33 @@ public static class FloorGenerator
         kinds[Vector2Int.zero] = RoomKind.Start;
 
         Dictionary<Vector2Int, int> distances = BuildDistances(cells);
-        Vector2Int bossCell = Vector2Int.zero;
+        Vector2Int exitCell = FindFarthestCell(cells);
+        if (profile.IsBossStage) kinds[exitCell] = RoomKind.Boss;
+
+        // 출구 방은 일반 전투방(보스 스테이지에서는 보스방)으로 예약한다.
+        List<Vector2Int> candidates = new List<Vector2Int>();
+        foreach (Vector2Int cell in cells)
+        {
+            if (cell != exitCell && kinds[cell] == RoomKind.Normal) candidates.Add(cell);
+        }
+        Shuffle(candidates);
+
+        if (profile.KeepNonCombatRoomsAwayFromStart)
+        {
+            if (!AssignRooms(candidates, kinds, distances, RoomKind.Treasure, profile.TreasureRoomCount, 2) ||
+                !AssignRooms(candidates, kinds, distances, RoomKind.Shop, profile.ShopRoomCount, 2)) return null;
+        }
+        if (!AssignRooms(candidates, kinds, distances, RoomKind.Elite, profile.EliteRoomCount, 2)) return null;
+        if (profile.KeepNonCombatRoomsAwayFromStart) return kinds;
+        if (!AssignRooms(candidates, kinds, distances, RoomKind.Treasure, profile.TreasureRoomCount, 0) ||
+            !AssignRooms(candidates, kinds, distances, RoomKind.Shop, profile.ShopRoomCount, 0)) return null;
+        return kinds;
+    }
+
+    private static Vector2Int FindFarthestCell(List<Vector2Int> cells)
+    {
+        var distances = BuildDistances(cells);
+        Vector2Int result = Vector2Int.zero;
         int farthest = -1;
         foreach (Vector2Int cell in cells)
         {
@@ -140,33 +291,35 @@ public static class FloorGenerator
             if (distances.TryGetValue(cell, out int distance) && distance > farthest)
             {
                 farthest = distance;
-                bossCell = cell;
+                result = cell;
             }
         }
-        if (farthest >= 0) kinds[bossCell] = RoomKind.Boss;
+        return result;
+    }
 
-        // 시작·보스를 뺀 나머지 중에서 특수 방을 뽑는다.
-        List<Vector2Int> candidates = new List<Vector2Int>();
-        foreach (Vector2Int cell in cells)
+    private static bool AssignRooms(
+        List<Vector2Int> candidates,
+        Dictionary<Vector2Int, RoomKind> kinds,
+        Dictionary<Vector2Int, int> distances,
+        RoomKind kind,
+        int count, int minimumDistance)
+    {
+        int assigned = 0;
+        for (int index = 0; index < candidates.Count && assigned < count;)
         {
-            if (kinds[cell] == RoomKind.Normal) candidates.Add(cell);
-        }
-        Shuffle(candidates);
+            Vector2Int cell = candidates[index];
+            if (!distances.TryGetValue(cell, out int distance) || distance < minimumDistance)
+            {
+                index++;
+                continue;
+            }
 
-        int cursor = 0;
-        for (int i = 0; i < profile.EliteRoomCount && cursor < candidates.Count; i++)
-        {
-            kinds[candidates[cursor++]] = RoomKind.Elite;
+            kinds[cell] = kind;
+            candidates.RemoveAt(index);
+            assigned++;
         }
-        for (int i = 0; i < profile.TreasureRoomCount && cursor < candidates.Count; i++)
-        {
-            kinds[candidates[cursor++]] = RoomKind.Treasure;
-        }
-        for (int i = 0; i < profile.ShopRoomCount && cursor < candidates.Count; i++)
-        {
-            kinds[candidates[cursor++]] = RoomKind.Shop;
-        }
-        return kinds;
+
+        return assigned == count;
     }
 
     private static Dictionary<Vector2Int, int> BuildDistances(List<Vector2Int> cells)

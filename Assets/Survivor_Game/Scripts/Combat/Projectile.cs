@@ -31,6 +31,7 @@ public class Projectile : MonoBehaviour
     private DamageData damageData;
     private Vector2 travelDirection;
     private Vector2 attackOrigin;
+    private bool spent;
     [Header("Impact Visual")]
     [SerializeField] private ProjectileImpactVisual impactPrefab;
 
@@ -44,6 +45,7 @@ public class Projectile : MonoBehaviour
         float weaponSpeed,
         DamageData newDamageData)
     {
+        spent = false;
         damageData = newDamageData;
         travelDirection = direction.normalized;
         attackOrigin = transform.position;
@@ -55,14 +57,17 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.TryGetComponent(out EnemyHealth enemyHealth))
+        if (spent) return;
+        EnemyHealth enemyHealth = other.GetComponentInParent<EnemyHealth>();
+        if (enemyHealth == null || !enemyHealth.isActiveAndEnabled || enemyHealth.GetCurrentHealth() <= 0)
         {
             return;
         }
-
+        // Destroy is deferred; additional colliders in this physics step must not add impact twice.
+        spent = true;
         enemyHealth.TakeDamage(damageData);
 
-        if (other.TryGetComponent(out EnemyKnockback enemyKnockback))
+        if (enemyHealth.TryGetComponent(out EnemyKnockback enemyKnockback))
         {
             Vector2 knockbackDirection = CalculateKnockbackDirection(other);
 
@@ -73,7 +78,7 @@ public class Projectile : MonoBehaviour
             );
         }
 
-        if (other.TryGetComponent(out EnemyHitEffect hitEffect))
+        if (enemyHealth.TryGetComponent(out EnemyHitEffect hitEffect))
         {
             hitEffect.Play();
         }

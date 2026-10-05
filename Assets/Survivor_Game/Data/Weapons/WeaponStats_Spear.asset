@@ -81,6 +81,7 @@ MonoBehaviour:
       startTime: 0.1
       endTime: 0.32
       damageMultiplier: 1
+      staggerImpact: 35
       knockbackStrength: 5
       knockbackDuration: 0.18
       knockbackDirection: 1
@@ -124,6 +125,7 @@ MonoBehaviour:
       startTime: 0.1
       endTime: 0.2
       damageMultiplier: 0.65
+      staggerImpact: 35
       knockbackStrength: 5
       knockbackDuration: 0.18
       knockbackDirection: 1
@@ -131,6 +133,7 @@ MonoBehaviour:
       startTime: 0.28
       endTime: 0.38
       damageMultiplier: 0.65
+      staggerImpact: 35
       knockbackStrength: 5
       knockbackDuration: 0.18
       knockbackDirection: 1
@@ -177,6 +180,7 @@ MonoBehaviour:
       startTime: 0.3
       endTime: 0.52
       damageMultiplier: 2.2
+      staggerImpact: 70
       knockbackStrength: 7
       knockbackDuration: 0.3
       knockbackDirection: 0
@@ -207,6 +211,10 @@ MonoBehaviour:
       afterimageMinimumDistance: 0.08
       afterimageLifetime: 0.14
       afterimageOpacity: 0.4
+  weaponFamily: 8
+  defaultSpecialAttack: {fileID: 11400000, guid: 6ed0ca065f254adab2261f47179442e8, type: 2}
+  lockSpecialAttack: 0
+  specialAttackSlotClip: {fileID: 7400000, guid: 34b154d9b1682314fa728ecbc2e5579a, type: 2}
   useSpecialAttack: 0
   specialAttack:
     movementDistance: 0
@@ -222,6 +230,7 @@ MonoBehaviour:
       startTime: 0.1
       endTime: 0.35
       damageMultiplier: 1
+      staggerImpact: 60
       knockbackStrength: 3
       knockbackDuration: 0.2
       knockbackDirection: 0

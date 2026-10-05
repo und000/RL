@@ -17,3 +17,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b73c8f4183993894986b5155fb79bf13, type: 2}
   - {fileID: 11400000, guid: 8f311f6b82df8bd43b9254247d9df1b0, type: 2}
   - {fileID: 11400000, guid: 0c13f5ce7b80fe249950ae78e6ce99e8, type: 2}
+  - {fileID: 11400000, guid: 5c125572c4a44d9b913f0647f625e5d6, type: 2}
+  bossFloor: {fileID: 11400000, guid: d2670e9f6f8a4fefaf5728cd55059eb6, type: 2}
+  bossCandidates:
+  - {fileID: 8100000000000000001, guid: d4444444444444444444444444444444, type: 3}
+  - {fileID: 3004679380934692091, guid: d9481752e89718c4cb6603b60ca59bee, type: 3}
+  - {fileID: 325908636417574984, guid: f6128ab06e768654da2bee057859a2b5, type: 3}

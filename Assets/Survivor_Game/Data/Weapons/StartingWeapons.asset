@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24679724a8c14e2d92e05ce446ea14c7, type: 3}
+  m_Name: StartingWeapons
+  m_EditorClassIdentifier: Assembly-CSharp::StartingWeaponCatalog
+  weapons:
+  - {fileID: 11400000, guid: 4a3cff30eeae46afa851e70de50d7a32, type: 2}
+  - {fileID: 11400000, guid: 28f67576c5ea7484bb7af3bb159a1296, type: 2}
+  - {fileID: 11400000, guid: 03b978ba42544c4458da5810ace14ec8, type: 2}
+  - {fileID: 11400000, guid: b0b760033f9d46219a875142a43a2fb8, type: 2}
+  - {fileID: 11400000, guid: b05779f61c224905a45277a74aa1eaa0, type: 2}
+  - {fileID: 11400000, guid: 4fa1843abd8b40e98a52e85745a03c5b, type: 2}
+  defaultFamily: 32

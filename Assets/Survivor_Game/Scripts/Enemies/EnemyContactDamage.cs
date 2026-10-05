@@ -11,9 +11,12 @@ public class EnemyContactDamage : MonoBehaviour, IEnemyPoolLifecycle
     private float damageInterval = 1f;
 
     private float nextDamageTime;
+    private EnemyStagger stagger;
+    private void Awake() => stagger = GetComponent<EnemyStagger>();
 
     private void OnCollisionStay2D(Collision2D collision)
     {
+        if (stagger != null && stagger.IsStaggered) return;
         if (Time.time < nextDamageTime)
         {
             return;

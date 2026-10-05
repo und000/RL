@@ -9,6 +9,8 @@ public class RadialImpactVisual : MonoBehaviour
     [Header("Prefab Visual")]
     [SerializeField] private Animator animator;
     [SerializeField, Min(0.01f)] private float visualLifetime = 0.35f;
+    [Tooltip("끄면 재생, 확산, 지연, 소멸이 게임 배속과 일시정지를 따릅니다. 자식 Animator/Particle System도 같은 시간 모드로 설정하세요.")]
+    [SerializeField] private bool useUnscaledTime = true;
 
     [Header("Impact Timing")]
     [FormerlySerializedAs("duration")]
@@ -35,22 +37,24 @@ public class RadialImpactVisual : MonoBehaviour
         Action<float> onRadiusReached, float playDuration)
     {
         transform.position = center;
-        float startedAt = Time.unscaledTime;
+        float startedAt = useUnscaledTime ? Time.unscaledTime : Time.time;
         if (animator != null)
         {
+            animator.updateMode = useUnscaledTime ? AnimatorUpdateMode.UnscaledTime : AnimatorUpdateMode.Normal;
             animator.speed = 1f / Mathf.Max(0.01f, visualLifetime);
             animator.Play(0, 0, 0f);
         }
         if (impactTiming == ImpactTiming.Instant) onRadiusReached?.Invoke(radius);
         else if (impactTiming == ImpactTiming.DelayedInstant)
         {
-            if (impactDelay > 0f) yield return new WaitForSecondsRealtime(impactDelay);
+            if (impactDelay > 0f)
+                yield return useUnscaledTime ? (object)new WaitForSecondsRealtime(impactDelay) : new WaitForSeconds(impactDelay);
             onRadiusReached?.Invoke(radius);
         }
         float elapsed = 0f;
         while (elapsed < playDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
             float progress = Mathf.Clamp01(elapsed / playDuration);
             float expansion = Mathf.Clamp01(expansionCurve.Evaluate(progress));
             if (impactTiming == ImpactTiming.Expanding) onRadiusReached?.Invoke(radius * expansion);
@@ -58,9 +62,9 @@ public class RadialImpactVisual : MonoBehaviour
         }
         if (impactTiming == ImpactTiming.Expanding) onRadiusReached?.Invoke(radius);
 
-        float remainingVisualTime = visualLifetime - (Time.unscaledTime - startedAt);
+        float remainingVisualTime = visualLifetime - ((useUnscaledTime ? Time.unscaledTime : Time.time) - startedAt);
         if (remainingVisualTime > 0f)
-            yield return new WaitForSecondsRealtime(remainingVisualTime);
+            yield return useUnscaledTime ? (object)new WaitForSecondsRealtime(remainingVisualTime) : new WaitForSeconds(remainingVisualTime);
 
         Destroy(gameObject);
     }

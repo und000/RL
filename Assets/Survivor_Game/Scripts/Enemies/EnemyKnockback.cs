@@ -25,12 +25,17 @@ public class EnemyKnockback : MonoBehaviour, IEnemyPoolLifecycle
     private float knockbackDuration;
     private float remainingTime;
     private float remainingStopTime;
+    private EnemyStagger stagger;
+
+    private void Awake() => stagger = GetComponent<EnemyStagger>();
+    public void ClearKnockback() => ResetKnockback();
 
     public void ApplyKnockback(
         Vector2 direction,
         float strength,
         float duration)
     {
+        if (stagger != null && stagger.IsStaggered) return;
         float resistanceMultiplier = 1f - knockbackResistance;
         float finalStrength = Mathf.Max(0f, strength) * resistanceMultiplier;
         float finalDuration = Mathf.Max(0f, duration) * resistanceMultiplier;

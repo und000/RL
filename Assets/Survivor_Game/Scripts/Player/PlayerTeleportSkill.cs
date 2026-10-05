@@ -5,11 +5,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
-[RequireComponent(typeof(PlayerHealth), typeof(SpriteRenderer))]
+[RequireComponent(typeof(PlayerHealth))]
 [AddComponentMenu("Player/Player Teleport Skill")]
 public class PlayerTeleportSkill : MonoBehaviour
 {
-    [Header("Legacy Input (disabled for weapon special attacks)")]
+    [Header("Optional Input (keep disabled while right click is a weapon attack)")]
     [SerializeField] private bool enableRightClickInput;
     [Header("순간이동 거리")]
     [SerializeField, Min(0.1f)] private float maximumDistance = 10f;
@@ -35,11 +35,13 @@ public class PlayerTeleportSkill : MonoBehaviour
     [SerializeField, Min(0f)] private float cooldown = 3f;
 
     [Header("Cooldown Ready Effect")]
+    [SerializeField] private SpriteRenderer playerRenderer;
     [SerializeField] private Color cooldownReadyColor = new Color(0.1f, 0.55f, 1f, 0.5f);
     [SerializeField, Min(0.01f)] private float cooldownReadyFlashDuration = 0.25f;
 
     public event Action<Vector2, float> OnArrivalAreaEffect;
     public TeleportVisualProfile VisualProfile => visualProfile;
+    public bool IsAiming => aiming;
 
     private readonly List<RaycastHit2D> castResults = new List<RaycastHit2D>(8);
     private readonly List<Collider2D> overlapResults = new List<Collider2D>(32);
@@ -47,7 +49,7 @@ public class PlayerTeleportSkill : MonoBehaviour
     private Rigidbody2D body;
     private Collider2D playerCollider;
     private PlayerHealth playerHealth;
-    private SpriteRenderer playerRenderer;
+    private CoreBoardStatApplier statApplier;
     private Camera worldCamera;
     private CameraFollow cameraFollow;
     private ContactFilter2D obstacleFilter;
@@ -63,13 +65,20 @@ public class PlayerTeleportSkill : MonoBehaviour
     private bool aiming;
     private bool cooldownFlashPlayed = true;
     private Coroutine cooldownReadyFlashRoutine;
+    private Color colorBeforeReadyFlash;
+    private bool readyFlashActive;
 
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
         playerHealth = GetComponent<PlayerHealth>();
-        playerRenderer = GetComponent<SpriteRenderer>();
+        statApplier = GetComponent<CoreBoardStatApplier>();
+        if (playerRenderer == null)
+        {
+            Transform image = transform.Find("Body/Image");
+            playerRenderer = image != null ? image.GetComponent<SpriteRenderer>() : GetComponent<SpriteRenderer>();
+        }
         worldCamera = Camera.main;
         cameraFollow = worldCamera != null ? worldCamera.GetComponent<CameraFollow>() : null;
         defaultFixedDeltaTime = Time.fixedDeltaTime;
@@ -114,13 +123,13 @@ public class PlayerTeleportSkill : MonoBehaviour
         }
 
         if (!aiming && mouse.rightButton.wasPressedThisFrame &&
-            Time.unscaledTime >= nextReadyTime && !LevelUpUI.IsPopupOpen)
+            Time.unscaledTime >= nextReadyTime && !GameInputKeys.IsGameplayBlocked)
         {
             BeginAiming();
         }
 
         if (!aiming) return;
-        if (LevelUpUI.IsPopupOpen)
+        if (GameInputKeys.IsGameplayBlocked)
         {
             CancelAiming();
             return;
@@ -139,6 +148,7 @@ public class PlayerTeleportSkill : MonoBehaviour
 
     private void BeginAiming()
     {
+        StaggerImpactFeedback.CancelActive();
         timeScaleBeforeAim = Time.timeScale;
         fixedDeltaBeforeAim = Time.fixedDeltaTime;
         aimingElapsedTime = 0f;
@@ -184,8 +194,9 @@ public class PlayerTeleportSkill : MonoBehaviour
         body.linearVelocity = Vector2.zero;
         BeginArrivalAreaEffect();
         StartCoroutine(GrantInvulnerability());
-        nextReadyTime = Time.unscaledTime + cooldown;
-        cooldownFlashPlayed = cooldown <= 0f;
+        float effectiveCooldown = cooldown * (1f - (statApplier != null ? statApplier.CooldownReductionRate : 0f));
+        nextReadyTime = Time.unscaledTime + effectiveCooldown;
+        cooldownFlashPlayed = effectiveCooldown <= 0f;
         if (cooldownFlashPlayed) PlayReadyFlash();
     }
 
@@ -336,43 +347,54 @@ public class PlayerTeleportSkill : MonoBehaviour
 
     private void PlayReadyFlash()
     {
-        if (cooldownReadyFlashRoutine != null)
-        {
-            StopCoroutine(cooldownReadyFlashRoutine);
-        }
+        StopReadyFlash();
+        if (playerRenderer == null) return;
+        colorBeforeReadyFlash = playerRenderer.color;
+        readyFlashActive = true;
         cooldownReadyFlashRoutine = StartCoroutine(PlayReadyFlashRoutine());
     }
 
     private IEnumerator PlayReadyFlashRoutine()
     {
-        Color originalColor = playerRenderer.color;
         float elapsed = 0f;
         while (elapsed < cooldownReadyFlashDuration)
         {
             elapsed += Time.unscaledDeltaTime;
             float fade = 1f - Mathf.Clamp01(elapsed / cooldownReadyFlashDuration);
             float blend = cooldownReadyColor.a * fade;
-            Color color = Color.Lerp(originalColor, cooldownReadyColor, blend);
-            color.a = originalColor.a;
+            Color color = Color.Lerp(colorBeforeReadyFlash, cooldownReadyColor, blend);
+            color.a = colorBeforeReadyFlash.a;
             playerRenderer.color = color;
             yield return null;
         }
 
-        playerRenderer.color = originalColor;
+        playerRenderer.color = colorBeforeReadyFlash;
+        readyFlashActive = false;
         cooldownReadyFlashRoutine = null;
     }
 
-    private void OnDisable()
+    private void StopReadyFlash()
     {
         if (cooldownReadyFlashRoutine != null)
         {
             StopCoroutine(cooldownReadyFlashRoutine);
             cooldownReadyFlashRoutine = null;
         }
+        if (readyFlashActive && playerRenderer != null) playerRenderer.color = colorBeforeReadyFlash;
+        readyFlashActive = false;
+    }
+
+    private void OnDisable()
+    {
+        StopReadyFlash();
         StopAllCoroutines();
         playerHealth?.SetTeleportInvulnerable(false);
-        RestoreTimeScale();
-        cameraFollow?.SetPointerFocus(targetPosition, false);
+        // 이 기능이 시간을 바꾸지 않았다면 다른 UI의 일시정지를 덮어쓰지 않는다.
+        if (aiming)
+        {
+            RestoreTimeScale();
+            cameraFollow?.SetPointerFocus(targetPosition, false);
+        }
         DestroyAimingVisuals();
         aiming = false;
     }

@@ -3,8 +3,8 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// 런 전체 진행을 관리한다. 챕터 &gt; 층 &gt; 방 순서로 내려가며,
-/// 보스 방을 클리어하면 다음 층을 생성하고 플레이어를 시작 방으로 옮긴다.
+/// 여러 방이 연결된 스테이지를 생성하고 유일한 출구에서 다음 스테이지로 이동한다.
+/// 일반 스테이지 4~5개 뒤 선택 보스전을 완료하고 다음 맵으로 이동한다.
 /// </summary>
 [DisallowMultipleComponent]
 [AddComponentMenu("Rooms/Run Manager")]
@@ -18,17 +18,12 @@ public class RunManager : MonoBehaviour
     [SerializeField] private Transform floorRoot;
 
     [Header("진행")]
-    [Tooltip("보스를 잡고 다음 층으로 넘어가기 전 잠깐 두는 여유 시간.")]
+    [Tooltip("화면이 완전히 검어진 뒤 유지할 최소 로딩 시간(초).")]
     [SerializeField, Min(0f)] private float floorTransitionDelay = 1.5f;
-    [Tooltip("켜면 보스 방 보상을 가져갈 때까지 다음 층으로 넘어가지 않는다.")]
-    [SerializeField] private bool waitForBossReward = true;
-    [Tooltip("보상을 기다리는 최대 시간. 체력이 가득 차 회복 보상을 받을 수 없는 등 " +
-        "끝내 가져갈 수 없는 상황에서 층이 영원히 멈추지 않게 하는 안전장치다.")]
-    [SerializeField, Min(1f)] private float maximumBossRewardWait = 60f;
 
     /// <summary>새 층이 만들어진 직후.</summary>
     public event Action<int, int, FloorProfile> OnFloorStarted;
-    /// <summary>보스를 잡아 층을 클리어한 순간.</summary>
+    /// <summary>전투를 완료한 스테이지의 출구를 사용한 순간.</summary>
     public event Action<int, int> OnFloorCleared;
     /// <summary>방 하나를 클리어할 때마다. 진행도 표시에 쓴다.</summary>
     public event Action<RoomInstance> OnRoomCleared;
@@ -45,12 +40,22 @@ public class RunManager : MonoBehaviour
     private int floorIndex;
     private bool transitioning;
     private bool runOver;
+    private StageTransitionUI transitionUI;
 
     public int ChapterIndex => chapterIndex;
     public int FloorIndex => floorIndex;
     public GeneratedFloor CurrentFloor => currentFloor;
     public FloorProfile CurrentProfile => currentProfile;
     public bool IsRunOver => runOver;
+    public bool IsTransitioning => transitioning;
+    public int ChapterStageCount => runProfile != null ? runProfile.GetChapter(chapterIndex)?.FloorCount ?? 0 : 0;
+    public bool IsBossStage => currentProfile != null && currentProfile.IsBossStage;
+    public bool IsCurrentFloorCleared => currentFloor != null && currentFloor.IsCombatCleared;
+    public string ExitDestinationLabel => IsFinalFloor ? "런 완료" : IsBossStage ? "다음 맵" :
+        runProfile.GetFloor(chapterIndex, floorIndex + 1)?.IsBossStage == true ? "보스 선택" : "다음 스테이지";
+    public bool IsFinalFloor => runProfile != null &&
+        runProfile.GetFloor(chapterIndex, floorIndex + 1) == null &&
+        runProfile.GetFloor(chapterIndex + 1, 0) == null;
 
     /// <summary>이 층의 방 수. 진행도 표시에 쓴다.</summary>
     public int TotalRoomCount => currentFloor != null ? currentFloor.Rooms.Count : 0;
@@ -71,9 +76,11 @@ public class RunManager : MonoBehaviour
 
     private void Start()
     {
-        if (runProfile == null || spawner == null)
+        if (runProfile == null || spawner == null || runProfile.FloorExitPrefab == null ||
+            runProfile.BossChoicePrefab == null || runProfile.StageTransitionUIPrefab == null ||
+            !runProfile.StageTransitionUIPrefab.IsConfigured)
         {
-            Debug.LogError("RunManager에 Run Profile과 Spawn Director가 필요합니다.", this);
+            Debug.LogError("RunManager에 Run Profile, Spawn Director, 출구·보스 선택·스테이지 로딩 UI 프리팹이 필요합니다.", this);
             enabled = false;
             return;
         }
@@ -86,13 +93,18 @@ public class RunManager : MonoBehaviour
         if (floorRoot == null) floorRoot = transform;
 
         WatchPlayerDeath();
+        transitionUI = Instantiate(runProfile.StageTransitionUIPrefab, transform);
 
         context = new RoomRuntimeContext
         {
+            RunManager = this,
+            BossChoicePrefab = runProfile.BossChoicePrefab,
+            ExitPrefab = runProfile.FloorExitPrefab,
             Spawner = spawner,
             PedestalPrefab = runProfile.RewardPedestalPrefab,
             DropPrefab = runProfile.RewardDropPrefab,
             Wallet = player != null ? player.GetComponentInChildren<PlayerWallet>() : null,
+            WeaponEquipment = player != null ? player.GetComponentInChildren<PlayerWeaponEquipment>() : null,
             Player = player
         };
         BeginRun();
@@ -111,6 +123,8 @@ public class RunManager : MonoBehaviour
         if (runOver) return;
 
         runOver = true;
+        if (transitionUI != null) transitionUI.End(false);
+        transitioning = false;
         StopAllCoroutines();
         CancelInvoke();
         OnRunFailed?.Invoke();
@@ -118,37 +132,58 @@ public class RunManager : MonoBehaviour
 
     public void BeginRun()
     {
+        if (runProfile == null || context == null) return;
+        for (int index = 0; index < runProfile.ChapterCount; index++)
+        {
+            ChapterProfile chapter = runProfile.GetChapter(index);
+            string error = "맵 프로필이 비어 있습니다.";
+            if (chapter == null || !chapter.IsValid(out error))
+            {
+                Debug.LogError($"맵 {index + 1}: {error}", this);
+                return;
+            }
+        }
+        StopAllCoroutines();
+        if (transitionUI != null) transitionUI.End(!runOver);
+        transitioning = false;
         chapterIndex = 0;
         floorIndex = 0;
         runOver = false;
         BuildCurrentFloor();
     }
 
-    private void BuildCurrentFloor()
+    private bool BuildCurrentFloor()
     {
         FloorProfile profile = runProfile.GetFloor(chapterIndex, floorIndex);
         if (profile == null)
         {
-            Debug.LogError(
-                $"챕터 {chapterIndex}, 층 {floorIndex}에 FloorProfile이 없습니다.", this);
-            return;
+            Debug.LogError($"맵 {chapterIndex + 1}, 스테이지 {floorIndex + 1}의 프로필이 없습니다.", this);
+            return false;
         }
-
-        ClearCurrentFloor();
-        currentProfile = profile;
+        FloorSpawnPlan previousSpawnPlan = context.SpawnPlan;
+        FloorRewardPlan previousRewardPlan = context.RewardPlan;
+        var previousBossCandidates = context.BossCandidates;
         context.SpawnPlan = profile.SpawnPlan;
         context.RewardPlan = profile.RewardPlan;
-        currentFloor = FloorGenerator.Generate(profile, context, floorRoot);
-        if (currentFloor == null) return;
-
-        foreach (RoomInstance room in currentFloor.Rooms)
+        context.BossCandidates = profile.IsBossStage ? runProfile.GetChapter(chapterIndex).BossCandidates : null;
+        // 배치 실패 시 현재 스테이지를 유지해 출구에서 다시 시도할 수 있게 한다.
+        GeneratedFloor generated = FloorGenerator.Generate(profile, context, floorRoot);
+        if (generated == null)
         {
-            room.OnRoomCleared += HandleRoomCleared;
+            context.SpawnPlan = previousSpawnPlan;
+            context.RewardPlan = previousRewardPlan;
+            context.BossCandidates = previousBossCandidates;
+            return false;
         }
-
+        ClearCurrentFloor();
+        currentProfile = profile;
+        currentFloor = generated;
+        foreach (RoomInstance room in currentFloor.Rooms) room.OnRoomCleared += HandleRoomCleared;
         MovePlayerToStart();
-        transitioning = false;
+        currentFloor.Exit.Configure(this, player);
         OnFloorStarted?.Invoke(chapterIndex, floorIndex, profile);
+        if (player != null) currentFloor.StartRoom.EnterFromStageTransition(player.position);
+        return true;
     }
 
     private void MovePlayerToStart()
@@ -157,8 +192,18 @@ public class RunManager : MonoBehaviour
 
         Rigidbody2D body = player.GetComponent<Rigidbody2D>();
         Vector3 target = currentFloor.StartRoom.transform.position;
-        if (body != null) body.position = target;
+        PlayerMovement movement = player.GetComponent<PlayerMovement>();
+        if (movement != null) movement.StopAttackMovement();
+        foreach (MeleeWeaponAttack weapon in player.GetComponentsInChildren<MeleeWeaponAttack>()) weapon.CancelForStageTransition();
+        if (body != null)
+        {
+            body.linearVelocity = Vector2.zero;
+            body.position = target;
+        }
         player.position = target;
+        Physics2D.SyncTransforms();
+        foreach (CameraFollow camera in FindObjectsByType<CameraFollow>(FindObjectsSortMode.None))
+            if (camera.gameObject.scene == gameObject.scene) camera.SnapToTarget();
     }
 
     private void HandleRoomCleared(RoomInstance room)
@@ -166,43 +211,45 @@ public class RunManager : MonoBehaviour
         if (room == null || runOver) return;
 
         OnRoomCleared?.Invoke(room);
-
-        if (room.Kind != RoomKind.Boss || transitioning) return;
-
-        transitioning = true;
-        StartCoroutine(AdvanceAfterBoss(room));
     }
 
-    /// <summary>
-    /// 보상을 그냥 두고 넘어가 버리면 보스 보상을 영영 못 받으므로,
-    /// 받침대가 남아 있는 동안에는 층 전환을 미룬다.
-    /// </summary>
-    private IEnumerator AdvanceAfterBoss(RoomInstance bossRoom)
+    /// <summary>현재 층의 유일한 출구만 전환을 요청할 수 있다. 남은 보상은 플레이어가 선택한다.</summary>
+    public bool TryUseFloorExit(FloorExit exit)
     {
-        if (waitForBossReward)
-        {
-            float giveUpTime = Time.unscaledTime + maximumBossRewardWait;
-            while (bossRoom != null && bossRoom.HasPendingRewards)
-            {
-                if (Time.unscaledTime >= giveUpTime)
-                {
-                    Debug.LogWarning(
-                        "보스 보상을 가져가지 않아 기다림을 끝내고 다음 층으로 넘어갑니다.",
-                        this);
-                    break;
-                }
-                yield return null;
-            }
-        }
+        if (!isActiveAndEnabled || runOver || transitioning || currentFloor == null ||
+            exit == null || exit != currentFloor.Exit || !exit.CanUse ||
+            transitionUI == null || !transitionUI.Begin()) return false;
+        transitioning = true;
+        StartCoroutine(AdvanceFromExit());
+        return true;
+    }
 
-        yield return new WaitForSeconds(floorTransitionDelay);
-        if (!runOver) AdvanceFloor();
+    private IEnumerator AdvanceFromExit()
+    {
+        try
+        {
+            yield return transitionUI.FadeOut();
+            // 알파 1인 검은 화면을 먼저 렌더링한 뒤 동기 생성 작업을 수행한다.
+            yield return null;
+            float blackStartedAt = Time.realtimeSinceStartup;
+            if (!runOver) AdvanceFloor();
+            // 이전 스테이지의 지연 Destroy와 UI 갱신도 검은 화면 안에서 마친다.
+            yield return null;
+            float remaining = floorTransitionDelay - (Time.realtimeSinceStartup - blackStartedAt);
+            if (remaining > 0f) yield return new WaitForSecondsRealtime(remaining);
+            yield return transitionUI.FadeIn();
+        }
+        finally
+        {
+            if (transitionUI != null) transitionUI.End(!runOver);
+            transitioning = false;
+        }
     }
 
     private void AdvanceFloor()
     {
-        OnFloorCleared?.Invoke(chapterIndex, floorIndex);
-
+        int previousChapter = chapterIndex;
+        int previousFloor = floorIndex;
         floorIndex++;
         ChapterProfile chapter = runProfile.GetChapter(chapterIndex);
         if (chapter != null && floorIndex >= chapter.FloorCount)
@@ -215,27 +262,48 @@ public class RunManager : MonoBehaviour
         {
             ClearCurrentFloor();
             runOver = true;
+            OnFloorCleared?.Invoke(previousChapter, previousFloor);
             OnRunCompleted?.Invoke();
             return;
         }
-
-        BuildCurrentFloor();
+        if (BuildCurrentFloor()) OnFloorCleared?.Invoke(previousChapter, previousFloor);
+        else
+        {
+            chapterIndex = previousChapter;
+            floorIndex = previousFloor;
+        }
     }
 
     private void ClearCurrentFloor()
     {
         if (currentFloor == null) return;
 
+        // 다음 스테이지도 같은 월드를 쓰므로 이전 전투의 투사체가 넘어가지 않게 한다.
+        foreach (EnemyProjectile projectile in FindObjectsByType<EnemyProjectile>(FindObjectsSortMode.None))
+            if (projectile.gameObject.scene == gameObject.scene) projectile.Cancel();
+        foreach (Projectile projectile in FindObjectsByType<Projectile>(FindObjectsSortMode.None))
+            if (projectile.gameObject.scene == gameObject.scene)
+            {
+                projectile.gameObject.SetActive(false);
+                Destroy(projectile.gameObject);
+            }
+
         foreach (RoomInstance room in currentFloor.Rooms)
         {
             if (room != null) room.OnRoomCleared -= HandleRoomCleared;
         }
-        if (currentFloor.Root != null) Destroy(currentFloor.Root.gameObject);
+        if (currentFloor.Root != null)
+        {
+            currentFloor.Root.gameObject.SetActive(false);
+            Destroy(currentFloor.Root.gameObject);
+        }
         currentFloor = null;
     }
 
     private void OnDisable()
     {
+        if (transitionUI != null) transitionUI.End(!runOver);
+        transitioning = false;
         CancelInvoke();
         StopAllCoroutines();
     }

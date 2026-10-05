@@ -129,6 +129,7 @@ public class RunResultUI : MonoBehaviour
 
     private void Show()
     {
+        StaggerImpactFeedback.CancelActive();
         shown = true;
         pending = false;
         resultPanel.SetActive(true);
@@ -138,6 +139,7 @@ public class RunResultUI : MonoBehaviour
     /// <summary>런에서 남긴 것을 가지고 첫 화면으로 돌아가 기체를 손보게 한다.</summary>
     public void GoToTitle()
     {
+        StaggerImpactFeedback.CancelActive();
         // 씬을 바꾸기 전에 반드시 시간을 되돌린다.
         Time.timeScale = 1f;
         if (string.IsNullOrEmpty(titleSceneName))
@@ -150,6 +152,7 @@ public class RunResultUI : MonoBehaviour
 
     public void Restart()
     {
+        StaggerImpactFeedback.CancelActive();
         // 씬을 다시 불러오기 전에 반드시 시간을 되돌린다.
         Time.timeScale = 1f;
         Scene active = SceneManager.GetActiveScene();

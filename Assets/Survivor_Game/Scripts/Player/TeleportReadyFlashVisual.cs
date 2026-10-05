@@ -16,7 +16,7 @@ public class TeleportReadyFlashVisual : MonoBehaviour
     private IEnumerator PlayRoutine(
         SpriteRenderer sourceRenderer)
     {
-        if (overlay == null)
+        if (overlay == null || sourceRenderer == null)
         {
             Debug.LogError("ReadyFlash 프리팹의 Render에 SpriteRenderer가 필요합니다.", this);
             Destroy(gameObject);

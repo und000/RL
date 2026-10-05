@@ -11,6 +11,7 @@ public class WeaponHitboxGroup
 }
 
 [DisallowMultipleComponent]
+[DefaultExecutionOrder(300)]
 [RequireComponent(typeof(WeaponAimController))]
 [AddComponentMenu("Combat/Melee Weapon Attack")]
 public class MeleeWeaponAttack : MonoBehaviour
@@ -24,11 +25,12 @@ public class MeleeWeaponAttack : MonoBehaviour
     [SerializeField] private Transform swingVfxMotionPoint;
 
     [Header("Hitbox Groups")]
-    [Tooltip("IDs must match Hitbox Group ID values in the weapon profile.")]
+    [Tooltip("IDs must match Hitbox Group ID values in the weapon profile. Add Polygon, Box, Circle or Capsule colliders from the SwingEffect hierarchy; one group may contain several shapes.")]
     [SerializeField] private WeaponHitboxGroup[] hitboxGroups =
         Array.Empty<WeaponHitboxGroup>();
     [SerializeField] private Transform attackOrigin;
 
+    private readonly HashSet<int> firedProjectileWindows = new HashSet<int>();
     private readonly List<Collider2D> overlapResults = new List<Collider2D>(32);
     private readonly List<HashSet<EnemyHealth>> hitEnemiesByWindow =
         new List<HashSet<EnemyHealth>>();
@@ -37,17 +39,25 @@ public class MeleeWeaponAttack : MonoBehaviour
     private PlayerEnergy playerEnergy;
     private PlayerMovement playerMovement;
     private bool specialAttackActive;
+    private bool specialAttackConfigured;
+    private WeaponSkillProfile equippedSpecialAttack;
+    private RuntimeAnimatorController originalAnimatorController;
+    private AnimatorOverrideController specialAttackOverride;
+    public WeaponSkillProfile EquippedSpecialAttack => equippedSpecialAttack;
+    public bool CanChangeSpecialAttack => CanStartAttack && !attacking;
+    public bool HasEquippedSpecialAttack => equippedSpecialAttack != null && equippedSpecialAttack.CanUseOn(weaponStats);
     private ContactFilter2D enemyFilter;
     private float stepElapsed;
     private float motionDuration;
     private float timingScale = 1f;
     private float stepSpeed = 1f;
-    private float nextAttackTime;
     private float lastAttackCompletedTime = float.NegativeInfinity;
     private float bufferedAttackUntil = float.NegativeInfinity;
     private int currentComboIndex = -1;
     private bool attacking;
     private bool animatorStarted;
+    private bool attackMovementStarted;
+    private Vector2 attackMovementDirection;
     private bool externalActionLocked;
     private bool queuedNextAttack;
     private bool heavyAttackActive;
@@ -68,6 +78,66 @@ public class MeleeWeaponAttack : MonoBehaviour
     public WeaponStatsProfile WeaponProfile => weaponStats;
     public Animator SwingAnimator => swingAnimator;
 
+    private bool CanStartAttack => isActiveAndEnabled && !externalActionLocked && !GameInputKeys.IsGameplayBlocked &&
+        (playerMovement == null || playerMovement.CanAttack);
+
+    /// <summary>장착한 프로필을 적용한다. 프리팹 변형도 실제 장비의 수치를 사용한다.</summary>
+    public void Configure(WeaponStatsProfile profile)
+    {
+        CancelAttack(true);
+        weaponStats = profile;
+        SetSpecialAttack(profile != null ? profile.DefaultSpecialAttack : null);
+        currentComboIndex = -1;
+        lastAttackCompletedTime = float.NegativeInfinity;
+        PlayIdle(true);
+    }
+
+    public bool CanSetSpecialAttack(WeaponSkillProfile skill)
+    {
+        if (attacking || externalActionLocked || swingAnimator == null || weaponStats == null) return false;
+        if (weaponStats.LockSpecialAttack && skill != weaponStats.DefaultSpecialAttack) return false;
+        if (skill == null) return true;
+        if (!skill.CanUseOn(weaponStats) || weaponStats.SpecialAttackSlotClip == null) return false;
+        RuntimeAnimatorController source = originalAnimatorController != null
+            ? originalAnimatorController : swingAnimator.runtimeAnimatorController;
+        if (source == null || !swingAnimator.HasState(0, Animator.StringToHash(weaponStats.SpecialAttackStateName))) return false;
+        bool hasSlot = false;
+        foreach (AnimationClip clip in source.animationClips)
+            if (clip == weaponStats.SpecialAttackSlotClip) hasSlot = true;
+        if (!hasSlot) return false;
+        if (skill.SpecialAttack.fireProjectile) return weaponStats.ProjectilePrefab != null;
+        if (skill.SpecialAttack.hitWindows != null)
+            foreach (WeaponHitWindow hit in skill.SpecialAttack.hitWindows)
+                if (hit != null && FindHitboxGroup(hit.hitboxGroupId) == null) return false;
+        return true;
+    }
+
+    public bool SetSpecialAttack(WeaponSkillProfile skill)
+    {
+        if (!CanSetSpecialAttack(skill)) return false;
+        if (originalAnimatorController == null) originalAnimatorController = swingAnimator.runtimeAnimatorController;
+        if (specialAttackOverride != null)
+        {
+            swingAnimator.runtimeAnimatorController = originalAnimatorController;
+            Destroy(specialAttackOverride);
+            specialAttackOverride = null;
+        }
+        specialAttackConfigured = true;
+        equippedSpecialAttack = skill;
+        if (skill != null)
+        {
+            specialAttackOverride = new AnimatorOverrideController(originalAnimatorController);
+            specialAttackOverride[weaponStats.SpecialAttackSlotClip] = skill.SpecialAttackClip;
+            swingAnimator.runtimeAnimatorController = specialAttackOverride;
+        }
+        return true;
+    }
+
+    private void OnDestroy()
+    {
+        if (specialAttackOverride != null) Destroy(specialAttackOverride);
+    }
+
     private void Awake()
     {
         aimController = GetComponent<WeaponAimController>();
@@ -86,8 +156,12 @@ public class MeleeWeaponAttack : MonoBehaviour
         SetAllHitboxesEnabled(false);
         if (swingAnimator != null)
         {
-            var nodes = new List<Transform>(swingAnimator.GetComponentsInChildren<Transform>(true));
-            nodes.Remove(swingAnimator.transform); // AimRoot remains owned by cursor aiming.
+            // The Animator can live on the weapon root. Only blend the aiming
+            // hierarchy's children, leaving cursor aiming and sibling VFX alone.
+            Transform poseRoot = aimController.AimRoot;
+            var nodes = new List<Transform>(poseRoot.GetComponentsInChildren<Transform>(true));
+            nodes.Remove(poseRoot);
+            nodes.Remove(swingAnimator.transform);
             returnTransforms = nodes.ToArray();
             returnPositions = new Vector3[nodes.Count];
             returnScales = new Vector3[nodes.Count];
@@ -97,6 +171,8 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     private void Start()
     {
+        // Standalone prefab instances also receive their weapon default. Equipment can explicitly leave the slot empty.
+        if (!specialAttackConfigured) Configure(weaponStats);
         PlayIdle(true);
     }
 
@@ -104,10 +180,10 @@ public class MeleeWeaponAttack : MonoBehaviour
     {
         if (playerMovement != null && !playerMovement.CanAttack)
         {
-            if (attacking) CancelAttack();
+            if (attacking || externalActionLocked) CancelAttack();
             return;
         }
-        if (externalActionLocked || LevelUpUI.IsPopupOpen) return;
+        if (externalActionLocked || GameInputKeys.IsGameplayBlocked) return;
         Mouse mouse = Mouse.current;
         if (mouse == null || weaponStats == null) return;
 
@@ -120,17 +196,15 @@ public class MeleeWeaponAttack : MonoBehaviour
 
         if (attacking)
         {
-            if (pressedThisFrame || (weaponStats.RepeatWhileHeld && mouse.leftButton.isPressed && !heavyModifierHeld))
+            if (pressedThisFrame)
             {
                 bufferedAttackUntil = Time.time + weaponStats.InputBufferDuration;
             }
             return;
         }
 
-        if (LevelUpUI.IsPopupOpen) return;
-
         if ((weaponStats.RepeatWhileHeld ? mouse.rightButton.isPressed : mouse.rightButton.wasPressedThisFrame)
-            && weaponStats.HasSpecialAttack)
+            && HasEquippedSpecialAttack)
         {
             BeginSpecialAttack();
             return;
@@ -147,7 +221,6 @@ public class MeleeWeaponAttack : MonoBehaviour
         {
             bufferedAttackUntil = Time.time + weaponStats.InputBufferDuration;
         }
-        if (Time.time < nextAttackTime) return;
 
         bool requested = weaponStats.RepeatWhileHeld
             ? mouse.leftButton.isPressed
@@ -162,7 +235,10 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (GameInputKeys.IsGameplayBlocked) return;
         // Query colliders after Animator has applied this frame's weapon pose.
+        // 회피나 사망이 이 프레임의 Update 뒤에 일어났어도 타격 전에 취소한다.
+        if ((attacking || externalActionLocked) && playerMovement != null && !playerMovement.CanAttack) CancelAttack();
         if (attacking && !externalActionLocked) UpdateAttack();
         UpdateIdleReturn();
     }
@@ -177,9 +253,8 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     private void BeginAttack(int comboIndex)
     {
-        if (playerMovement != null && !playerMovement.CanAttack) return;
-        if (externalActionLocked || attacking || Time.time < nextAttackTime ||
-            AttackCount == 0) return;
+        if (!CanStartAttack) return;
+        if (attacking || AttackCount == 0) return;
 
         heavyAttackActive = false;
         specialAttackActive = false;
@@ -190,9 +265,8 @@ public class MeleeWeaponAttack : MonoBehaviour
     /// <summary>Shift + 좌클릭 강공격. 콤보에 참여하지 않는 단독 공격이다.</summary>
     public void BeginHeavyAttack()
     {
-        if (playerMovement != null && !playerMovement.CanAttack) return;
-        if (weaponStats == null || externalActionLocked || attacking ||
-            Time.time < nextAttackTime || !weaponStats.HasHeavyAttack) return;
+        if (!CanStartAttack) return;
+        if (weaponStats == null || attacking || !weaponStats.HasHeavyAttack) return;
 
         // 에너지 컴포넌트가 아예 없는 캐릭터라면 자원 제약 없이 사용한다.
         int energyCost = weaponStats.HeavyAttackEnergyCost;
@@ -209,13 +283,16 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     public void BeginSpecialAttack()
     {
-        if (playerMovement != null && !playerMovement.CanAttack) return;
-        if (weaponStats == null || !weaponStats.HasSpecialAttack || externalActionLocked ||
-            attacking || Time.time < nextAttackTime || LevelUpUI.IsPopupOpen) return;
+        if (!CanStartAttack) return;
+        if (weaponStats == null || !HasEquippedSpecialAttack || attacking) return;
+        // Validate the receiver before charging MP. Missing MP never means a free skill.
+        if (swingAnimator == null || !swingAnimator.isActiveAndEnabled ||
+            !swingAnimator.HasState(0, Animator.StringToHash(weaponStats.SpecialAttackStateName))) return;
+        if (playerEnergy == null || !playerEnergy.TryConsume(equippedSpecialAttack.MpCost)) return;
         heavyAttackActive = false;
         specialAttackActive = true;
         bufferedAttackUntil = float.NegativeInfinity;
-        BeginStep(weaponStats.SpecialAttack);
+        BeginStep(equippedSpecialAttack.SpecialAttack);
     }
 
     private void BeginStep(WeaponAttackStep step)
@@ -227,6 +304,7 @@ public class MeleeWeaponAttack : MonoBehaviour
         }
 
         attacking = true;
+        attackMovementStarted = false;
         returningToIdle = false;
         animatorStarted = false;
         queuedNextAttack = false;
@@ -303,9 +381,30 @@ public class MeleeWeaponAttack : MonoBehaviour
         {
             WeaponHitWindow window = windows[index];
             if (window == null || motionElapsed < window.startTime ||
-                motionElapsed > window.endTime) continue;
+                (!step.fireProjectile && motionElapsed > window.endTime)) continue;
 
-            QueryHitWindow(window, index);
+            if (step.fireProjectile) FireProjectileWindow(step, window, index);
+            else QueryHitWindow(window, index);
+        }
+    }
+
+    private void FireProjectileWindow(WeaponAttackStep step, WeaponHitWindow window, int windowIndex)
+    {
+        if (weaponStats.ProjectilePrefab == null || combatStats == null || !firedProjectileWindows.Add(windowIndex)) return;
+        Vector2 direction = aimController.AimDirection.normalized;
+        Vector2 side = new Vector2(-direction.y, direction.x);
+        Vector2 offset = weaponStats.ProjectileSpawnOffset;
+        Vector3 origin = attackOrigin.position + (Vector3)(direction * offset.x + side * offset.y);
+        int count = Mathf.Clamp(step.projectilesPerShot, 1, 12);
+        for (int i = 0; i < count; i++)
+        {
+            float spread = count > 1 ? Mathf.Lerp(-step.projectileSpreadAngle * 0.5f, step.projectileSpreadAngle * 0.5f, (float)i / (count - 1)) : 0f;
+            Vector2 shotDirection = Quaternion.Euler(0f, 0f, spread) * direction;
+            float angle = Mathf.Atan2(shotDirection.y, shotDirection.x) * Mathf.Rad2Deg;
+            Projectile projectile = Instantiate(weaponStats.ProjectilePrefab, origin, Quaternion.Euler(0f, 0f, angle));
+            projectile.Initialize(shotDirection, weaponStats.ProjectileSpeed,
+                combatStats.CreateWeaponDamageData(weaponStats.BaseDamage, weaponStats.DamageMultiplier * window.damageMultiplier)
+                    .WithStaggerImpact(window.staggerImpact));
         }
     }
 
@@ -317,7 +416,7 @@ public class MeleeWeaponAttack : MonoBehaviour
         HashSet<EnemyHealth> hitEnemies = hitEnemiesByWindow[windowIndex];
         foreach (Collider2D hitbox in group.colliders)
         {
-            if (hitbox == null) continue;
+            if (hitbox == null || !hitbox.gameObject.activeInHierarchy) continue;
             hitbox.enabled = true;
             overlapResults.Clear();
             hitbox.Overlap(enemyFilter, overlapResults);
@@ -339,7 +438,7 @@ public class MeleeWeaponAttack : MonoBehaviour
             Vector3 hitPosition = health.transform.position;
             health.TakeDamage(combatStats.CreateWeaponDamageData(
                 weaponStats.BaseDamage,
-                weaponStats.DamageMultiplier * window.damageMultiplier));
+                weaponStats.DamageMultiplier * window.damageMultiplier).WithStaggerImpact(window.staggerImpact));
             if (weaponStats.HitImpactPrefab != null)
             {
                 GameObject impact = PrefabPool.Spawn(weaponStats.HitImpactPrefab.gameObject,
@@ -372,7 +471,6 @@ public class MeleeWeaponAttack : MonoBehaviour
         SetAllHitboxesEnabled(false);
         aimController.EndAttack();
         lastAttackCompletedTime = Time.time;
-        nextAttackTime = Time.time;
 
         if (heavyAttackActive || specialAttackActive)
         {
@@ -386,7 +484,13 @@ public class MeleeWeaponAttack : MonoBehaviour
             return;
         }
 
-        if (queuedNextAttack)
+        // A held button must still be down when this attack ends. Do not buffer
+        // the initial click's held frames as a second attack after release.
+        Mouse mouse = Mouse.current;
+        Keyboard keyboard = Keyboard.current;
+        bool repeatHeldAttack = weaponStats.RepeatWhileHeld && mouse != null &&
+            mouse.leftButton.isPressed && !(keyboard != null && keyboard.shiftKey.isPressed);
+        if (queuedNextAttack || repeatHeldAttack)
         {
             queuedNextAttack = false;
             BeginAttack(GetNextComboIndex());
@@ -398,15 +502,28 @@ public class MeleeWeaponAttack : MonoBehaviour
         PlayIdle();
     }
 
+    // Animation Event on the weapon Animator: place this at the desired movement frame.
+    public void StartAttackMovement()
+    {
+        if (!CanStartAttack || !attacking || !animatorStarted || attackMovementStarted ||
+            playerMovement == null) return;
+
+        WeaponAttackStep step = GetCurrentStep();
+        if (step == null) return;
+
+        attackMovementStarted = true;
+        playerMovement.BeginAttackMovement(attackMovementDirection, step.movementDistance,
+            step.movementDuration / stepSpeed);
+    }
+
     private void StartAttackAnimation(WeaponAttackStep step)
     {
         animatorStarted = true;
-        playerMovement?.BeginAttackMovement(aimController.AimDirection, step.movementDistance,
-            step.movementDuration / stepSpeed);
+        attackMovementDirection = aimController.AimDirection;
         if (swingAnimator == null) return;
 
         swingAnimator.speed = 1f;
-        swingAnimator.Play(step.animatorStateName, 0, 0f);
+        swingAnimator.Play(specialAttackActive ? weaponStats.SpecialAttackStateName : step.animatorStateName, 0, 0f);
         swingAnimator.Update(0f);
         AnimatorClipInfo[] clips = swingAnimator.GetCurrentAnimatorClipInfo(0);
         if (clips.Length > 0 && clips[0].clip != null)
@@ -421,7 +538,8 @@ public class MeleeWeaponAttack : MonoBehaviour
                 ? swingAnimator.transform.parent
                 : swingAnimator.transform;
         TrackSwingVfx(WeaponSwingVFX.SpawnAttached(
-            weaponStats.SwingVfxPrefab,
+            specialAttackActive && equippedSpecialAttack != null && equippedSpecialAttack.SpecialAttackVfx != null
+                ? equippedSpecialAttack.SpecialAttackVfx : weaponStats.SwingVfxPrefab,
             vfxParent,
             swingVfxMotionPoint,
             step.swingVfx,
@@ -511,7 +629,7 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     public bool TryBeginExternalAction(bool interruptBasicAttack)
     {
-        if (externalActionLocked) return false;
+        if (!CanStartAttack || weaponStats == null) return false;
         if (attacking)
         {
             if (!interruptBasicAttack) return false;
@@ -535,6 +653,7 @@ public class MeleeWeaponAttack : MonoBehaviour
 
     private void PrepareHitWindowCaches(WeaponAttackStep step)
     {
+        firedProjectileWindows.Clear();
         int count = step.hitWindows != null ? step.hitWindows.Length : 0;
         while (hitEnemiesByWindow.Count < count)
         {
@@ -572,7 +691,7 @@ public class MeleeWeaponAttack : MonoBehaviour
     private WeaponAttackStep GetCurrentStep()
     {
         if (weaponStats == null) return null;
-        if (specialAttackActive) return weaponStats.SpecialAttack;
+        if (specialAttackActive) return equippedSpecialAttack != null ? equippedSpecialAttack.SpecialAttack : null;
         return heavyAttackActive
             ? weaponStats.HeavyAttack
             : weaponStats.GetBasicAttackStep(currentComboIndex);
@@ -582,13 +701,16 @@ public class MeleeWeaponAttack : MonoBehaviour
     private float GetAttackSpeedMultiplier() =>
         weaponStats != null ? weaponStats.AttackSpeedMultiplier : 1f;
 
+    public void CancelForStageTransition() { CancelAttack(true); }
+
     private void CancelAttack(bool returnToIdleImmediately = false)
     {
+        GetComponent<WeaponSkillController>()?.CancelSkill();
+        externalActionLocked = false;
         playerMovement?.StopAttackMovement();
         specialAttackActive = false;
         attacking = false;
         animatorStarted = false;
-        externalActionLocked = false;
         queuedNextAttack = false;
         heavyAttackActive = false;
         bufferedAttackUntil = float.NegativeInfinity;

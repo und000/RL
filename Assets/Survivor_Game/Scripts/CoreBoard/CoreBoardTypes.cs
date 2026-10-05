@@ -2,8 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 칩의 역할. 1단계에서는 배치 규칙에만 쓰이고,
-/// 실제 회로 해석(전류가 어디까지 흐르는가)은 2단계에서 붙는다.
+/// 칩의 역할. 배치 규칙과 전류 전달·회로 효과 계산에 사용한다.
 /// </summary>
 public enum ChipCategory
 {
@@ -53,10 +52,8 @@ public enum BoardCellType
     Blocked,
     /// <summary>전류가 시작되는 칸. 소스 칩만 덮을 수 있다.</summary>
     PowerRail,
-    /// <summary>여기 놓인 칩은 발열이 절반이 된다.</summary>
-    HeatSink,
     /// <summary>배선이 깔린 칸. 칩 없이도 전류를 옆으로 전달한다.</summary>
-    Bus
+    Bus = 4 // 기존 직렬화 값을 유지한다.
 }
 
 public enum PinType
@@ -127,30 +124,6 @@ public struct PlacementResult
             case PlacementError.SourceNeedsPowerRail: return "소스 칩은 전원 단자에 물려야 합니다";
             default: return "배치할 수 없습니다";
         }
-    }
-}
-
-/// <summary>
-/// 오버클럭 수치. 전투 중 손으로 켜고 끄는 스위치라, 이득과 대가가 한눈에 읽혀야 한다.
-/// </summary>
-[Serializable]
-public struct OverclockSettings
-{
-    [Tooltip("켜져 있는 동안 전류가 닿은 칩이 받는 추가 배율. 0.4 = +40%.")]
-    [Min(0f)] public float boost;
-    [Tooltip("켜져 있는 동안 발열에 곱해지는 값.")]
-    [Min(1f)] public float heatScale;
-
-    public static OverclockSettings Default => new OverclockSettings
-    {
-        boost = 0.4f,
-        heatScale = 2f
-    };
-
-    public void Normalize()
-    {
-        boost = Mathf.Max(0f, boost);
-        heatScale = Mathf.Max(1f, heatScale);
     }
 }
 

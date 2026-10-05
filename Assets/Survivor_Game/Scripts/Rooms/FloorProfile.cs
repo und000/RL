@@ -37,10 +37,6 @@ public class FloorSpawnPlan
     [Tooltip("보스에게 추가로 곱하는 체력 배율.")]
     [Min(1f)] public float bossHealthMultiplier = 1f;
 
-    [Header("보스 방")]
-    [Tooltip("이 층의 보스. 비어 있으면 보스 방이 즉시 클리어된다.")]
-    public GameObject bossPrefab;
-
     /// <summary>방 종류에 맞는 난이도 보정을 만든다.</summary>
     public EnemyScaling ResolveScaling(RoomKind kind)
     {
@@ -61,8 +57,6 @@ public class FloorSpawnPlan
             case RoomKind.Elite:
                 return UnityEngine.Random.Range(
                     eliteMinCount, Mathf.Max(eliteMinCount, eliteMaxCount) + 1);
-            case RoomKind.Boss:
-                return bossPrefab != null ? 1 : 0;
             default:
                 return 0;
         }
@@ -70,7 +64,7 @@ public class FloorSpawnPlan
 
     public GameObject PickPrefab(RoomKind kind)
     {
-        if (kind == RoomKind.Boss) return bossPrefab;
+        if (kind == RoomKind.Boss) return null; // 보스는 맵별 후보에서 직접 선택해 스폰한다.
         Entry[] pool = kind == RoomKind.Elite ? eliteEnemies : normalEnemies;
         return PickWeighted(pool);
     }
@@ -127,11 +121,13 @@ public class FloorProfile : ScriptableObject
 
     [Header("표시 이름")]
     [SerializeField] private string displayName = "1F";
+    [Tooltip("시작방과 선택 보스방으로 이루어진 별도 보스전. 일반 스테이지에는 끈다.")]
+    [SerializeField] private bool isBossStage;
 
     [Header("방 개수")]
-    [Tooltip("시작 방과 보스 방을 포함한 총 방 수.")]
-    [SerializeField, Min(3)] private int roomCount = 8;
-    [Tooltip("전투 방 중 엘리트 방으로 승격할 개수.")]
+    [Tooltip("일반 스테이지의 총 방 수. 보스 스테이지는 시작방 + 보스방 2개로 고정된다.")]
+    [SerializeField, Min(2)] private int roomCount = 8;
+    [Tooltip("전투 방 중 엘리트 방으로 승격할 개수. 시작방에서 문을 최소 두 번 지나야 하는 위치에 배치한다.")]
     [SerializeField, Min(0)] private int eliteRoomCount = 1;
     [Tooltip("보물 방 개수. 전투가 없는 방이다.")]
     [SerializeField, Min(0)] private int treasureRoomCount = 1;
@@ -139,6 +135,10 @@ public class FloorProfile : ScriptableObject
     [SerializeField, Min(0)] private int shopRoomCount = 1;
 
     [Header("배치")]
+    [Tooltip("거리와 디자인 제한을 만족하는 맵을 찾는 최대 시도 횟수. 실패하면 잘못된 맵을 만들지 않고 오류를 알린다.")]
+    [SerializeField, Min(1)] private int generationAttempts = 128;
+    [Tooltip("시작방에 바로 연결된 방은 전투방으로 유지한다. 보물·상점은 두 방 이상 떨어진 칸에 먼저 배정한다.")]
+    [SerializeField] private bool keepNonCombatRoomsAwayFromStart;
     [Tooltip("그리드 한 칸의 월드 크기. 이 층에 쓰는 방 프리팹들의 크기와 맞춰야 " +
         "방 사이가 벌어지거나 겹치지 않는다.")]
     [SerializeField] private Vector2 gridCellSize = new Vector2(48f, 32f);
@@ -154,42 +154,37 @@ public class FloorProfile : ScriptableObject
 
     public string DisplayName => string.IsNullOrWhiteSpace(displayName)
         ? name : displayName;
-    public int RoomCount => Mathf.Max(3, roomCount);
-    public int EliteRoomCount => Mathf.Max(0, eliteRoomCount);
-    public int TreasureRoomCount => Mathf.Max(0, treasureRoomCount);
-    public int ShopRoomCount => Mathf.Max(0, shopRoomCount);
+    public bool IsBossStage => isBossStage;
+    public int RoomCount => isBossStage ? 2 : Mathf.Max(3, roomCount);
+    public int EliteRoomCount => isBossStage ? 0 : Mathf.Max(0, eliteRoomCount);
+    public int TreasureRoomCount => isBossStage ? 0 : Mathf.Max(0, treasureRoomCount);
+    public int ShopRoomCount => isBossStage ? 0 : Mathf.Max(0, shopRoomCount);
+    public bool KeepNonCombatRoomsAwayFromStart => keepNonCombatRoomsAwayFromStart;
+    public int GenerationAttempts => Mathf.Max(1, generationAttempts);
     public Vector2 GridCellSize => new Vector2(
         Mathf.Max(1f, gridCellSize.x), Mathf.Max(1f, gridCellSize.y));
     public FloorSpawnPlan SpawnPlan => spawnPlan;
     public FloorRewardPlan RewardPlan => rewardPlan;
 
-    /// <summary>해당 종류의 방 프리팹을 하나 고른다. 없으면 Normal 풀로 대체한다.</summary>
-    public RoomInstance PickRoomPrefab(RoomKind kind)
+    /// <summary>실제 방 종류가 일치하는 디자인 후보. 누락된 종류를 일반방으로 바꾸지 않는다.</summary>
+    public List<RoomInstance> GetRoomPrefabs(RoomKind kind)
     {
-        RoomInstance picked = PickFromPool(kind);
-        if (picked != null) return picked;
-        return kind == RoomKind.Normal ? null : PickFromPool(RoomKind.Normal);
-    }
-
-    private RoomInstance PickFromPool(RoomKind kind)
-    {
+        List<RoomInstance> valid = new List<RoomInstance>();
+        if (roomPools == null) return valid;
         foreach (RoomPool pool in roomPools)
         {
-            if (pool == null || pool.kind != kind) continue;
-            List<RoomInstance> valid = new List<RoomInstance>();
+            if (pool == null || pool.kind != kind || pool.prefabs == null) continue;
             foreach (RoomInstance prefab in pool.prefabs)
             {
-                if (prefab != null) valid.Add(prefab);
+                if (prefab != null && prefab.Kind == kind && !valid.Contains(prefab)) valid.Add(prefab);
             }
-            if (valid.Count == 0) continue;
-            return valid[UnityEngine.Random.Range(0, valid.Count)];
         }
-        return null;
+        return valid;
     }
 
     private void OnValidate()
     {
-        roomCount = Mathf.Max(3, roomCount);
+        roomCount = isBossStage ? 2 : Mathf.Max(3, roomCount);
         eliteRoomCount = Mathf.Clamp(eliteRoomCount, 0, Mathf.Max(0, roomCount - 2));
         treasureRoomCount = Mathf.Clamp(treasureRoomCount, 0, Mathf.Max(0, roomCount - 2));
         shopRoomCount = Mathf.Clamp(shopRoomCount, 0, Mathf.Max(0, roomCount - 2));

@@ -13,8 +13,10 @@ public class WeaponAimController : MonoBehaviour
     }
 
     [Header("Aim Hierarchy")]
-    [Tooltip("Rotate this object toward the cursor. Keep the Animator on a child SwingRoot.")]
+    [Tooltip("Rotate this object toward the cursor. The weapon-root Animator can animate its children; keep this object's rotation controlled by aiming.")]
     [SerializeField] private Transform aimRoot;
+    [Tooltip("Optional sibling SwingEffect root. Shares the aim rotation so its visuals and hitboxes face the attack direction. Animate its children for per-swing offsets.")]
+    [SerializeField] private Transform swingEffectAimRoot;
     [SerializeField] private Transform aimOrigin;
     [SerializeField] private Camera worldCamera;
     [Header("Idle Render Flip")]
@@ -27,6 +29,7 @@ public class WeaponAimController : MonoBehaviour
     [SerializeField, Min(0f)] private float maximumTrackingSpeed = 720f;
     [SerializeField] private float angleOffset;
 
+    public Transform AimRoot => aimRoot != null ? aimRoot : transform;
     public AttackAimMode AimMode => attackAimMode;
     public float MaximumTrackingSpeed => maximumTrackingSpeed;
     public bool IsAttacking { get; private set; }
@@ -116,6 +119,8 @@ public class WeaponAimController : MonoBehaviour
                 targetAngle,
                 maximumTrackingSpeed * Time.deltaTime);
         aimRoot.rotation = Quaternion.Euler(0f, 0f, nextAngle);
+        if (swingEffectAimRoot != null && swingEffectAimRoot != aimRoot)
+            swingEffectAimRoot.rotation = aimRoot.rotation;
     }
 
     private void OnDisable()

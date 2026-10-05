@@ -5,17 +5,15 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 {
     [Header("Enemy Data")]
     [SerializeField] private EnemyProfile profile;
-    [Header("Legacy Fallback (used when Profile is empty)")]
-    [SerializeField, Min(1)] private int maxHealth = 3;
-    [SerializeField, Min(0)] private int defense;
-    [SerializeField] private GameObject experienceGemPrefab;
-    [SerializeField, Min(1)] private int myExperience = 1;
-
     private int currentHealth;
     private bool dying;
     private EnemyScaling scaling = EnemyScaling.None;
+    private EnemyStagger stagger;
+    private EnemyRank? encounterRank;
 
     public EnemyProfile Profile => profile;
+    public EnemyRank Rank => encounterRank ?? (profile != null ? profile.Rank : EnemyRank.Normal);
+    public void SetEncounterRank(EnemyRank? rank) => encounterRank = rank;
     /// <summary>지금 이 적에게 걸려 있는 층 난이도 보정.</summary>
     public EnemyScaling Scaling => scaling;
 
@@ -25,7 +23,12 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 
     private void Awake()
     {
-        ResetHealth();
+        stagger = GetComponent<EnemyStagger>();
+        if (profile == null)
+        {
+            Debug.LogError("EnemyHealth에 Enemy Profile이 필요합니다.", this);
+            enabled = false;
+        }
     }
 
     private void OnEnable()
@@ -35,7 +38,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 
     public void TakeDamage(DamageData damageData)
     {
-        if (currentHealth <= 0)
+        if (!isActiveAndEnabled || currentHealth <= 0)
         {
             return;
         }
@@ -57,6 +60,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
         {
             OnDamaged?.Invoke();
         }
+        if (currentHealth > 0 && stagger != null) stagger.ApplyImpact(damageData.StaggerImpact);
         OnHealthChanged?.Invoke(currentHealth, GetMaxHealth());
         if (currentHealth == 0)
         {
@@ -78,7 +82,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
         ResetHealth();
     }
 
-    public int GetBaseMaxHealth() => profile != null ? profile.MaxHealth : maxHealth;
+    public int GetBaseMaxHealth() => profile != null ? profile.MaxHealth : 1;
 
     public int GetMaxHealth()
     {
@@ -88,7 +92,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 
     public int GetDefense()
     {
-        int baseDefense = profile != null ? profile.Defense : defense;
+        int baseDefense = profile != null ? profile.Defense : 0;
         return baseDefense + scaling.DefenseBonus;
     }
 
@@ -117,10 +121,9 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 
     private void CompleteDeath()
     {
-
         GameObject gemPrefab = profile != null
-            ? profile.ExperienceGemPrefab : experienceGemPrefab;
-        int baseExperience = profile != null ? profile.Experience : myExperience;
+            ? profile.ExperienceGemPrefab : null;
+        int baseExperience = profile != null ? profile.Experience : 0;
         int experience = Mathf.Max(0,
             Mathf.RoundToInt(baseExperience * scaling.ExperienceMultiplier));
         if (gemPrefab != null)
@@ -161,6 +164,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
         dying = false;
         // 풀에 돌아간 적이 다음 층에서 이전 층 보정을 들고 나오지 않게 되돌린다.
         scaling = EnemyScaling.None;
+        encounterRank = null;
     }
 
     private void ResetHealth()

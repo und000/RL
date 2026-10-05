@@ -30,6 +30,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2414178299921429554}
+  - {fileID: 5002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7785746411969405518
@@ -184,3 +185,123 @@ MonoBehaviour:
   radialCenter: {x: 0.5, y: 0.5}
   radialAspect: {x: 1, y: 1}
   radialOutsideIn: 0
+--- !u!1 &5001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5002}
+  - component: {fileID: 5003}
+  m_Layer: 0
+  m_Name: Hitbox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 3.7300003, y: 3.7300003, z: 3.7300003}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3847195976056333345}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!60 &5003
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Points:
+    m_Paths:
+    - - {x: 1.3566668, y: 1.4449997}
+      - {x: 1.6366668, y: 1.3249997}
+      - {x: 1.7666668, y: 1.2049997}
+      - {x: 1.8666668, y: 1.0849997}
+      - {x: 1.9366668, y: 0.9649997}
+      - {x: 1.9966668, y: 0.8449997}
+      - {x: 2.0466668, y: 0.7249997}
+      - {x: 2.0866668, y: 0.6049997}
+      - {x: 2.1266668, y: 0.4849997}
+      - {x: 2.1466668, y: 0.3649997}
+      - {x: 2.1566668, y: 0.2449997}
+      - {x: 2.1566668, y: 0.1249997}
+      - {x: 2.1466668, y: 0.0049997}
+      - {x: 2.1366668, y: -0.1150003}
+      - {x: 2.1266668, y: -0.2350003}
+      - {x: 2.1066668, y: -0.3550003}
+      - {x: 2.0666668, y: -0.4750003}
+      - {x: 2.0266668, y: -0.5950003}
+      - {x: 1.9866668, y: -0.7150003}
+      - {x: 1.9066668, y: -0.8350003}
+      - {x: 1.8066668, y: -0.9550003}
+      - {x: 1.7066668, y: -1.0750003}
+      - {x: 1.5866668, y: -1.1950003}
+      - {x: 1.4366668, y: -1.3150003}
+      - {x: 1.0866668, y: -1.4350003}
+      - {x: 0.4466668, y: -1.4350003}
+      - {x: 0.6566668, y: -1.3150003}
+      - {x: 0.7766668, y: -1.1950003}
+      - {x: 0.8766668, y: -1.0750003}
+      - {x: 0.9566668, y: -0.9550003}
+      - {x: 1.0266668, y: -0.8350003}
+      - {x: 1.0666668, y: -0.7150003}
+      - {x: 1.1166668, y: -0.5950003}
+      - {x: 1.1466668, y: -0.4750003}
+      - {x: 1.1666668, y: -0.3550003}
+      - {x: 1.1866668, y: -0.2350003}
+      - {x: 1.1966668, y: -0.1150003}
+      - {x: 1.2166668, y: 0.0049997}
+      - {x: 1.2366668, y: 0.1249997}
+      - {x: 1.2566668, y: 0.2449997}
+      - {x: 1.2666668, y: 0.3649997}
+      - {x: 1.2466668, y: 0.4849997}
+      - {x: 1.2166668, y: 0.6049997}
+      - {x: 1.1866668, y: 0.7249997}
+      - {x: 1.1466668, y: 0.8449997}
+      - {x: 1.0866668, y: 0.9649997}
+      - {x: 0.9666668, y: 1.0849997}
+      - {x: 0.7666668, y: 1.2049997}
+      - {x: 0.4966668, y: 1.3249997}
+      - {x: 0.6566668, y: 1.4449997}
+  m_UseDelaunayMesh: 0

@@ -23,3 +23,9 @@ MonoBehaviour:
   healthBarOffset: {x: 0, y: 1.2, z: 0}
   healthBarVisibleDuration: 5
   markerType: 0
+  staggerThreshold: 30
+  staggerDuration: 4
+  staggerDecayDelay: 2
+  staggerDecayPerSecond: 10
+  staggerRecoveryImmunity: 0.5
+  eliteStaggerMultiplier: 2

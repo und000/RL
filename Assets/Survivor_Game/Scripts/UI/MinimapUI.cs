@@ -51,6 +51,8 @@ public class MinimapUI : MonoBehaviour
     [SerializeField] private Color treasureRoomColor = new Color(0.95f, 0.85f, 0.4f, 1f);
     [SerializeField] private Color shopRoomColor = new Color(0.5f, 0.8f, 0.95f, 1f);
     [SerializeField] private Color bossRoomColor = new Color(0.95f, 0.35f, 0.4f, 1f);
+    [Tooltip("출구가 있는 방의 작은 표식 색. 방을 발견하면 함께 표시한다.")]
+    [SerializeField] private Color exitMarkerColor = new Color(.2f, .9f, 1f, 1f);
     [Tooltip("발견만 하고 아직 들어가지 않은 방.")]
     [SerializeField] private Color undiscoveredColor = new Color(0.25f, 0.3f, 0.38f, 0.7f);
 
@@ -71,6 +73,7 @@ public class MinimapUI : MonoBehaviour
     private RectTransform panelRect;
     private RectTransform contentRect;
     private RectTransform playerMarker;
+    private Image exitMarker;
     private GeneratedFloor floor;
     private RoomInstance currentRoom;
     private RoomInstance lastCurrentRoom;
@@ -221,6 +224,7 @@ public class MinimapUI : MonoBehaviour
 
     private void ClearRooms()
     {
+        exitMarker = null;
         roomIcons.Clear();
         visitedRooms.Clear();
         roomsByCell.Clear();
@@ -290,6 +294,15 @@ public class MinimapUI : MonoBehaviour
             Image image = CreateImage(icon, normalRoomColor);
             image.enabled = false;
             roomIcons[room] = image;
+            if (room == floor.ExitRoom)
+            {
+                RectTransform marker = CreateChild("ExitMarker", icon);
+                marker.anchorMin = marker.anchorMax = Vector2.one;
+                marker.anchoredPosition = new Vector2(-3f, -3f);
+                marker.sizeDelta = Vector2.one * 4f;
+                exitMarker = CreateImage(marker, exitMarkerColor);
+                exitMarker.enabled = false;
+            }
         }
     }
 
@@ -388,6 +401,7 @@ public class MinimapUI : MonoBehaviour
                 (revealNeighbours && IsNeighbourOfVisited(room));
 
             image.enabled = discovered;
+            if (room == floor.ExitRoom && exitMarker != null) exitMarker.enabled = discovered;
             if (!discovered) continue;
 
             image.color = ResolveRoomColor(room, visited, ReferenceEquals(room, currentRoom));

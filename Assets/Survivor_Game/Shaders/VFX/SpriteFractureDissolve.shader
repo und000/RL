@@ -6,6 +6,7 @@ Shader "Survivor/VFX/Sprite Sharp Hole Dissolve"
         _NoiseTex("Dissolve Noise Texture", 2D) = "white" {}
         _Color("Tint", Color) = (1, 1, 1, 1)
         _Dissolve("Dissolve", Range(0, 1)) = 0
+        _DissolveRotation("Dissolve Rotation (Clockwise)", Range(-180, 180)) = 0
         _NoiseTiling("Noise Tiling", Vector) = (1, 1, 0, 0)
         _NoiseAngle("Noise Angle", Range(-180, 180)) = 0
         _NoiseArcBendAngle("Noise Center Bend Angle", Range(-150, 150)) = 60
@@ -69,6 +70,7 @@ Shader "Survivor/VFX/Sprite Sharp Hole Dissolve"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
                 float _Dissolve;
+                float _DissolveRotation;
                 float4 _NoiseTex_ST;
                 float4 _NoiseTiling;
                 float _NoiseAngle;
@@ -106,12 +108,22 @@ Shader "Survivor/VFX/Sprite Sharp Hole Dissolve"
                     input.color;
                 if (sprite.a <= 0.0001) discard;
 
+                // Inverse sampling rotation turns the entire dissolve clockwise,
+                // including the bend, noise and progression, around the UV center.
+                float rotationRadians = radians(_DissolveRotation);
+                float rotationSine = sin(rotationRadians);
+                float rotationCosine = cos(rotationRadians);
+                float2 effectCenteredUv = input.uv - 0.5;
+                float2 dissolveUv = float2(
+                    effectCenteredUv.x * rotationCosine - effectCenteredUv.y * rotationSine,
+                    effectCenteredUv.x * rotationSine + effectCenteredUv.y * rotationCosine) + 0.5;
+
                 float2 direction = _DissolveDirection.xy;
                 direction = dot(direction, direction) > 0.0001
                     ? normalize(direction) : float2(1.0, 0.0);
                 direction = lerp(direction, -direction, step(0.5, _Reverse));
-                float2 centeredUv = input.uv - 0.5;
-                float2 bendPosition = input.uv - _NoiseArcBendCenter.xy;
+                float2 centeredUv = dissolveUv - 0.5;
+                float2 bendPosition = dissolveUv - _NoiseArcBendCenter.xy;
                 float bendRadians = radians(clamp(
                     _NoiseArcBendAngle, -150.0, 150.0) * 0.5);
                 float bendStrength = tan(bendRadians);
@@ -136,7 +148,7 @@ Shader "Survivor/VFX/Sprite Sharp Hole Dissolve"
 
                 float directionalPosition = saturate(dot(centeredUv, direction) + 0.5);
                 float2 radialAspect = max(abs(_RadialAspect.xy), 0.01);
-                float2 radialUv = (input.uv - _RadialCenter.xy) * radialAspect;
+                float2 radialUv = (dissolveUv - _RadialCenter.xy) * radialAspect;
                 float radialPosition = saturate(length(radialUv) * 1.41421356);
                 radialPosition = lerp(radialPosition, 1.0 - radialPosition,
                     step(0.5, _RadialInvert));

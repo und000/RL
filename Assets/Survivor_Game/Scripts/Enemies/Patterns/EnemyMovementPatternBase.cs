@@ -7,12 +7,14 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
     protected Transform Target { get; private set; }
     private EnemyKnockback enemyKnockback;
     private EnemyAwareness awareness;
+    private EnemyStagger stagger;
 
     protected virtual void Awake()
     {
         Body = GetComponent<Rigidbody2D>();
         enemyKnockback = GetComponent<EnemyKnockback>();
         awareness = GetComponent<EnemyAwareness>();
+        stagger = GetComponent<EnemyStagger>();
     }
 
     protected virtual void Start()
@@ -31,6 +33,11 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
 
     protected void FixedUpdate()
     {
+        if (stagger != null && stagger.IsStaggered)
+        {
+            Body.linearVelocity = Vector2.zero;
+            return;
+        }
         if (enemyKnockback != null &&
             enemyKnockback.TryGetKnockbackVelocity(out Vector2 knockbackVelocity))
         {
@@ -60,6 +67,12 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
 
     protected abstract void UpdatePattern(float deltaTime);
     protected abstract void ResetPattern();
+
+    public void InterruptForStagger()
+    {
+        ResetPattern();
+        if (Body != null) Body.linearVelocity = Vector2.zero;
+    }
 
     protected virtual void OnDisable()
     {

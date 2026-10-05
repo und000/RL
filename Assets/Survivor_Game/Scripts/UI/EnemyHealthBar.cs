@@ -61,6 +61,8 @@ public class EnemyHealthBar : MonoBehaviour
         EnemyProfile profile = targetHealth.Profile;
         HealthBarType resolvedType = profile != null
             ? profile.HealthBarType : healthBarType;
+        if (targetHealth.Rank == EnemyRank.Elite) resolvedType = HealthBarType.Elite;
+        else if (targetHealth.Rank == EnemyRank.Boss) resolvedType = HealthBarType.Boss;
         Vector3 resolvedOffset = profile != null
             ? profile.HealthBarOffset : barOffset;
         float resolvedDuration = profile != null

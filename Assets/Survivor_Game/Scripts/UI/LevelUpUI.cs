@@ -1,159 +1,182 @@
-using System.Collections;
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// 레벨이 오르면 시간을 늦추고 축하 창을 띄운다. 창은 프리팹에 미리 만들어 두고,
-/// 여기서는 켜고 끄며 문구만 채운다.
-/// </summary>
+/// <summary>레벨마다 아이템 4종 중 하나를 지급한다. 리롤 3회는 한 런 전체가 공유한다.</summary>
 [DisallowMultipleComponent]
 [AddComponentMenu("UI/Level Up UI")]
 public class LevelUpUI : MonoBehaviour
 {
-    /// <summary>창이 떠 있는 동안에는 공격·회피 같은 조작을 막는다.</summary>
-    public static bool IsPopupOpen { get; private set; }
-
+    [Serializable]
+    public class ChoiceSlot
+    {
+        public Button button;
+        public TMP_Text title;
+        public TMP_Text description;
+        public Image icon;
+    }
+    private static LevelUpUI active;
+    private static int blockedThroughFrame = -1;
+    public static bool IsPopupOpen => active != null || Time.frameCount <= blockedThroughFrame;
     [Header("연결")]
-    [Tooltip("비워 두면 Player 태그가 붙은 오브젝트에서 찾는다.")]
     [SerializeField] private PlayerLevel playerLevel;
-    [Tooltip("켜고 끄는 창. 프리팹 안에 미리 놓아 둔 것을 연결한다. " +
-        "이 오브젝트만 꺼지고 스크립트가 붙은 뿌리는 켜져 있어야 한다.")]
     [SerializeField] private GameObject levelUpPanel;
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text messageText;
-    [SerializeField] private Button continueButton;
+    [SerializeField] private Button rerollButton;
+    [SerializeField] private LevelUpRewardPool rewardPool;
+    [SerializeField] private ChoiceSlot[] slots = Array.Empty<ChoiceSlot>();
+    [Tooltip("한 런 전체가 공유하는 리롤 횟수. 레벨업/스테이지 전환으로 충전되지 않는다.")]
+    [SerializeField, Min(0)] private int rerollsPerRun = 3;
+    private readonly Queue<int> pendingLevels = new Queue<int>();
+    private LevelUpRewardDraft draft;
+    private PlayerHealth health;
+    private RunManager run;
+    private GameObject player;
+    private bool ownsPause;
+    private bool configurationFailed;
+    private float previousTimeScale;
+    private int lastActionFrame = -1;
+    public int RemainingRerolls => draft != null ? draft.RemainingRerolls : 0;
+    private bool RunEnded => (health != null && health.IsDead) || (run != null && run.IsRunOver);
 
-    [Header("레벨업 시간 연출")]
-    [SerializeField, Min(0f)] private float slowDownDuration = 0.5f;
-    [SerializeField, Range(0f, 1f)] private float minimumTimeScale;
-
-    [Header("문구")]
-    [Tooltip("프리팹에는 폰트 경고를 피하려고 영문 자리표시가 들어 있다. " +
-        "여기 적은 것이 실제로 화면에 뜬다.")]
-    [SerializeField] private string titleFormat = "LEVEL UP!  Lv. {0}";
-    [SerializeField] private string messageLabel = "레벨이 올랐습니다!";
-    [SerializeField] private string continueLabel = "계속";
-
-    private int previousLevel;
-    private float timeScaleBeforePause = 1f;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetState() { active = null; blockedThroughFrame = -1; }
 
     private void Awake()
     {
-        IsPopupOpen = false;
-
-        // 프리팹에 한글을 저장해 두면 폰트가 붙기 전 한 프레임 네모로 그려진다.
-        // 그래서 문구는 여기서 채운다.
-        GameFontManager.ApplyFont(titleText);
-        GameFontManager.ApplyFont(messageText);
-        if (messageText != null) messageText.text = messageLabel;
-
-        if (continueButton != null)
-        {
-            TMP_Text label = continueButton.GetComponentInChildren<TMP_Text>(true);
-            GameFontManager.ApplyFont(label);
-            if (label != null) label.text = continueLabel;
-            continueButton.onClick.AddListener(ContinueGame);
-        }
-
+        draft = new LevelUpRewardDraft(rerollsPerRun);
         if (levelUpPanel != null) levelUpPanel.SetActive(false);
+        foreach (TMP_Text text in GetComponentsInChildren<TMP_Text>(true)) GameFontManager.ApplyFont(text);
+        for (int i = 0; i < slots.Length; i++)
+        {
+            int index = i;
+            if (slots[i]?.button != null) slots[i].button.onClick.AddListener(() => Choose(index));
+        }
+        if (rerollButton != null) rerollButton.onClick.AddListener(Reroll);
     }
 
     private void Start()
     {
         if (playerLevel == null)
         {
-            GameObject player = GameObject.FindWithTag("Player");
-            playerLevel = player != null
-                ? player.GetComponentInChildren<PlayerLevel>(true) : null;
+            GameObject tagged = GameObject.FindWithTag("Player");
+            playerLevel = tagged != null ? tagged.GetComponentInChildren<PlayerLevel>(true) : null;
         }
-
-        if (playerLevel == null || levelUpPanel == null)
+        if (playerLevel == null || levelUpPanel == null || rewardPool == null || rerollButton == null ||
+            slots.Length != LevelUpRewardDraft.ChoiceCount || !Array.TrueForAll(slots, s => s != null && s.button != null))
         {
-            Debug.LogError("Level Up UI에 Player Level과 창이 연결되지 않았습니다.", this);
+            Debug.LogError("레벨업 선택 UI에 플레이어, 보상 풀, 카드 4개와 리롤 버튼이 필요합니다.", this);
             enabled = false;
             return;
         }
-
-        previousLevel = playerLevel.GetCurrentLevel();
-        playerLevel.OnProgressChanged += HandleProgressChanged;
+        player = playerLevel.gameObject;
+        health = playerLevel.GetComponentInParent<PlayerHealth>();
+        run = FindFirstObjectByType<RunManager>();
+        playerLevel.OnLevelUp += HandleLevelUp;
+        for (int level = 2; level <= playerLevel.GetCurrentLevel(); level++) pendingLevels.Enqueue(level);
     }
 
-    private void HandleProgressChanged()
+    private void HandleLevelUp(int level)
     {
-        int currentLevel = playerLevel.GetCurrentLevel();
+        if (RunEnded) return;
+        pendingLevels.Enqueue(level);
+        TryShowNext();
+    }
 
-        if (currentLevel <= previousLevel)
+    private void Update()
+    {
+        if (RunEnded) { pendingLevels.Clear(); Close(false); return; }
+        if (!ownsPause) TryShowNext();
+    }
+
+    private List<RoomRewardDefinition> Eligible() => rewardPool.GetEligible(item => item.CanGrant(player));
+
+    private void TryShowNext()
+    {
+        if (!isActiveAndEnabled || configurationFailed || ownsPause || IsPopupOpen || RunEnded ||
+            pendingLevels.Count == 0 || Time.timeScale <= 0f || RoomChoiceUI.IsBlockingGameplay || StageTransitionUI.IsBlockingGameplay) return;
+        if (!draft.Refresh(Eligible(), false))
         {
+            configurationFailed = true;
+            Debug.LogError("지급 가능한 레벨업 아이템이 4종 미만입니다. 보상 풀과 인벤토리를 확인하세요.", this);
             return;
         }
-
-        previousLevel = currentLevel;
-        BeginLevelUpSequence();
+        StaggerImpactFeedback.CancelActive();
+        previousTimeScale = Time.timeScale;
+        ownsPause = true;
+        active = this;
+        Time.timeScale = 0f;
+        lastActionFrame = Time.frameCount;
+        int level = pendingLevels.Dequeue();
+        if (titleText != null) titleText.text = "LEVEL UP!  Lv. " + level;
+        if (messageText != null) messageText.text = "아이템 하나를 선택하세요";
+        levelUpPanel.SetActive(true);
+        RefreshCards();
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(slots[0].button.gameObject);
     }
 
-    private void OnDestroy()
+    private void RefreshCards()
     {
-        if (playerLevel != null)
+        for (int i = 0; i < slots.Length; i++)
         {
-            playerLevel.OnProgressChanged -= HandleProgressChanged;
-        }
-
-        if (continueButton != null)
-        {
-            continueButton.onClick.RemoveListener(ContinueGame);
-        }
-
-        if (IsPopupOpen)
-        {
-            Time.timeScale = timeScaleBeforePause;
-        }
-
-        IsPopupOpen = false;
-    }
-
-    private void BeginLevelUpSequence()
-    {
-        if (IsPopupOpen)
-        {
-            return;
-        }
-
-        IsPopupOpen = true;
-        timeScaleBeforePause = Time.timeScale;
-        StartCoroutine(SlowDownAndShowPopup());
-    }
-
-    private IEnumerator SlowDownAndShowPopup()
-    {
-        float startTimeScale = timeScaleBeforePause;
-        float targetTimeScale = Mathf.Clamp(minimumTimeScale, 0f, startTimeScale);
-
-        if (slowDownDuration > 0f)
-        {
-            float elapsedTime = 0f;
-            while (elapsedTime < slowDownDuration)
+            RoomRewardDefinition item = draft.Choices[i];
+            ChoiceSlot slot = slots[i];
+            slot.button.interactable = true;
+            if (slot.title != null) { slot.title.text = item.DisplayName; slot.title.color = item.GradeColor; }
+            if (slot.description != null) slot.description.text = string.IsNullOrWhiteSpace(item.Description) ? item.BuildLabel() : item.Description;
+            if (slot.icon != null)
             {
-                elapsedTime += Time.unscaledDeltaTime;
-                float progress = Mathf.Clamp01(elapsedTime / slowDownDuration);
-                Time.timeScale = Mathf.Lerp(startTimeScale, targetTimeScale, progress);
-                yield return null;
+                slot.icon.sprite = item.Icon;
+                slot.icon.preserveAspect = true;
+                slot.icon.enabled = item.Icon != null;
             }
         }
-
-        Time.timeScale = targetTimeScale;
-        // 느려지는 동안 레벨이 더 올랐을 수 있으므로 뜨는 순간의 레벨을 적는다.
-        if (titleText != null)
-        {
-            titleText.text = string.Format(titleFormat, playerLevel.GetCurrentLevel());
-        }
-        levelUpPanel.SetActive(true);
+        TMP_Text label = rerollButton.GetComponentInChildren<TMP_Text>(true);
+        if (label != null) label.text = "리롤 · 남은 " + RemainingRerolls + "회";
+        rerollButton.interactable = RemainingRerolls > 0 && draft.HasAlternative(Eligible());
     }
 
-    private void ContinueGame()
+    private bool CanAct => isActiveAndEnabled && ownsPause && !RunEnded && Time.frameCount > lastActionFrame;
+
+    public void Reroll()
     {
-        levelUpPanel.SetActive(false);
-        Time.timeScale = timeScaleBeforePause;
-        IsPopupOpen = false;
+        if (!CanAct || !draft.Refresh(Eligible(), true)) return;
+        lastActionFrame = Time.frameCount;
+        RefreshCards();
+    }
+
+    public void Choose(int index)
+    {
+        if (!CanAct || index < 0 || index >= draft.Choices.Count) return;
+        lastActionFrame = Time.frameCount;
+        RoomRewardDefinition item = draft.Choices[index];
+        if (!item.CanGrant(player) || !item.Grant(player))
+        {
+            if (messageText != null) messageText.text = "지급할 수 없는 아이템입니다. 다른 아이템을 선택하세요";
+            slots[index].button.interactable = false;
+            return;
+        }
+        Close(true);
+    }
+
+    private void Close(bool resume)
+    {
+        if (!ownsPause) return;
+        if (levelUpPanel != null) levelUpPanel.SetActive(false);
+        if (resume && !RunEnded && Mathf.Approximately(Time.timeScale, 0f)) Time.timeScale = previousTimeScale;
+        ownsPause = false;
+        if (active == this) active = null;
+        blockedThroughFrame = Time.frameCount;
+    }
+
+    private void OnDisable() { Close(!RunEnded); }
+    private void OnDestroy()
+    {
+        if (playerLevel != null) playerLevel.OnLevelUp -= HandleLevelUp;
+        if (rerollButton != null) rerollButton.onClick.RemoveListener(Reroll);
     }
 }
