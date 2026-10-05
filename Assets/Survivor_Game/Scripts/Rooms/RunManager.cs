@@ -41,6 +41,26 @@ public class RunManager : MonoBehaviour
     private bool transitioning;
     private bool runOver;
     private StageTransitionUI transitionUI;
+    public float CombatSeconds { get; private set; }
+    public float ExplorationSeconds { get; private set; }
+    public float RewardSeconds { get; private set; }
+    public int CompletedCombatRooms { get; private set; }
+
+    private void Update()
+    {
+        if (runOver || transitioning || currentFloor == null) return;
+        if (LevelUpUI.IsPopupOpen || CoreBoardView.IsBlockingGameplay)
+        {
+            RewardSeconds += Time.unscaledDeltaTime;
+            return;
+        }
+        if (Time.timeScale <= 0f) return;
+        bool fighting = false;
+        foreach (RoomInstance room in currentFloor.Rooms)
+            if (room != null && room.IsCombatActive) { fighting = true; break; }
+        if (fighting) CombatSeconds += Time.unscaledDeltaTime;
+        else ExplorationSeconds += Time.unscaledDeltaTime;
+    }
 
     public int ChapterIndex => chapterIndex;
     public int FloorIndex => floorIndex;
@@ -94,6 +114,7 @@ public class RunManager : MonoBehaviour
 
         WatchPlayerDeath();
         transitionUI = Instantiate(runProfile.StageTransitionUIPrefab, transform);
+        RunPauseUI.Create(this);
 
         context = new RoomRuntimeContext
         {
@@ -147,6 +168,8 @@ public class RunManager : MonoBehaviour
         if (transitionUI != null) transitionUI.End(!runOver);
         transitioning = false;
         chapterIndex = 0;
+        CombatSeconds = ExplorationSeconds = RewardSeconds = 0f;
+        CompletedCombatRooms = 0;
         floorIndex = 0;
         runOver = false;
         BuildCurrentFloor();
@@ -209,7 +232,7 @@ public class RunManager : MonoBehaviour
     private void HandleRoomCleared(RoomInstance room)
     {
         if (room == null || runOver) return;
-
+        if (room.IsCombatRoom) CompletedCombatRooms++;
         OnRoomCleared?.Invoke(room);
     }
 

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: FloorProfile_C4_F1
   m_EditorClassIdentifier: Assembly-CSharp::FloorProfile
   displayName: 4-1F
-  roomCount: 11
-  eliteRoomCount: 2
+  roomCount: 5
+  eliteRoomCount: 1
   treasureRoomCount: 1
   shopRoomCount: 1
   gridCellSize: {x: 48, y: 32}
@@ -26,6 +26,8 @@ MonoBehaviour:
     prefabs:
     - {fileID: 2782757341684667721, guid: 6cae29b1c02e1de48875fbf824ad77b5, type: 3}
     - {fileID: 4084806000229509909, guid: 6bdae2a0a4e0fa7459968fdff3452b45, type: 3}
+    - {fileID: 2782757341684667721, guid: 86f5720854cb4a7899e7665b722a1e6c, type: 3}
+    - {fileID: 2782757341684667721, guid: 0aec1037ed684e03aea2df5694d8d324, type: 3}
   - kind: 2
     prefabs:
     - {fileID: 1680364238983935065, guid: 533e1c6aa0daf55489e06a23d379866c, type: 3}
@@ -39,8 +41,8 @@ MonoBehaviour:
     prefabs:
     - {fileID: 2080990157434974342, guid: b4997f892711fd747bd72dc8c165f73c, type: 3}
   spawnPlan:
-    normalMinCount: 6
-    normalMaxCount: 9
+    normalMinCount: 4
+    normalMaxCount: 6
     normalEnemies:
     - prefab: {fileID: 6911391679415815211, guid: 9857a538ea14f244ebef275c281d6cc8, type: 3}
       weight: 3.8000002
@@ -48,8 +50,8 @@ MonoBehaviour:
       weight: 4.6000004
     - prefab: {fileID: 6911391679415815211, guid: 28620732a23c4be999ff3ad47a143f49, type: 3}
       weight: 2.7
-    eliteMinCount: 3
-    eliteMaxCount: 4
+    eliteMinCount: 1
+    eliteMaxCount: 1
     eliteEnemies:
     - prefab: {fileID: 6911391679415815211, guid: 28620732a23c4be999ff3ad47a143f49, type: 3}
       weight: 3
@@ -58,7 +60,7 @@ MonoBehaviour:
     healthMultiplier: 1.54
     defenseBonus: 4
     experienceMultiplier: 5.5
-    creditsPerEnemy: 13
+    creditsPerEnemy: 24
     eliteHealthMultiplier: 1.6
     bossHealthMultiplier: 1.3
   rewardPlan:
@@ -179,7 +181,7 @@ MonoBehaviour:
     - kind: 4
       choiceCount: 3
       purchasable: 1
-      priceMultiplier: 5.9500003
+      priceMultiplier: 1.6
       rewards:
       - reward: {fileID: 11400000, guid: e2dfd7237c69d7a4da70c2f1c169ca37, type: 2}
         weight: 1

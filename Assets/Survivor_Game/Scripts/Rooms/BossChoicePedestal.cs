@@ -22,7 +22,9 @@ public class BossChoicePedestal : MonoBehaviour
         if (labelText != null)
         {
             GameFontManager.ApplyFont(labelText);
-            labelText.text = title + "\n" + GameInputKeys.InteractPrompt + " 전투 시작";
+            EnemyProjectileAttackPattern pattern = candidate != null ? candidate.GetComponent<EnemyProjectileAttackPattern>() : null;
+            string threat = pattern != null ? "\n" + pattern.DescribeAttack() : string.Empty;
+            labelText.text = title + threat + "\n" + GameInputKeys.InteractPrompt + " 전투 시작";
         }
     }
 

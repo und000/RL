@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 화면 우측 하단에 뜨는 사각형 미니맵. 생성된 층의 방을 격자로 그리고,
@@ -66,6 +67,7 @@ public class MinimapUI : MonoBehaviour
 
     private readonly Dictionary<RoomInstance, Image> roomIcons =
         new Dictionary<RoomInstance, Image>();
+    private readonly Dictionary<RoomInstance, TMP_Text> roomLabels = new Dictionary<RoomInstance, TMP_Text>();
     private readonly HashSet<RoomInstance> visitedRooms = new HashSet<RoomInstance>();
     private readonly Dictionary<Vector2Int, RoomInstance> roomsByCell =
         new Dictionary<Vector2Int, RoomInstance>();
@@ -226,6 +228,7 @@ public class MinimapUI : MonoBehaviour
     {
         exitMarker = null;
         roomIcons.Clear();
+        roomLabels.Clear();
         visitedRooms.Clear();
         roomsByCell.Clear();
         currentRoom = null;
@@ -294,6 +297,15 @@ public class MinimapUI : MonoBehaviour
             Image image = CreateImage(icon, normalRoomColor);
             image.enabled = false;
             roomIcons[room] = image;
+            RectTransform labelRect = CreateChild("KindLabel", icon);
+            labelRect.sizeDelta = roomSize;
+            TMP_Text label = labelRect.gameObject.AddComponent<TextMeshProUGUI>();
+            GameFontManager.ApplyFont(label);
+            label.fontSize = 10f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.raycastTarget = false;
+            label.enabled = false;
+            roomLabels[room] = label;
             if (room == floor.ExitRoom)
             {
                 RectTransform marker = CreateChild("ExitMarker", icon);
@@ -401,10 +413,20 @@ public class MinimapUI : MonoBehaviour
                 (revealNeighbours && IsNeighbourOfVisited(room));
 
             image.enabled = discovered;
-            if (room == floor.ExitRoom && exitMarker != null) exitMarker.enabled = discovered;
+            if (roomLabels.TryGetValue(room, out TMP_Text label))
+            {
+                label.enabled = discovered;
+                label.text = room.IsCombatRoom && room.IsCleared ? "완" : RoomSymbol(room.Kind);
+            }
+            if (room == floor.ExitRoom && exitMarker != null)
+            {
+                exitMarker.enabled = discovered;
+                exitMarker.color = floor.IsCombatCleared ? exitMarkerColor : Color.gray;
+            }
             if (!discovered) continue;
 
             image.color = ResolveRoomColor(room, visited, ReferenceEquals(room, currentRoom));
+            if (label != null) label.color = image.color.grayscale > .55f ? Color.black : Color.white;
         }
     }
 
@@ -439,6 +461,19 @@ public class MinimapUI : MonoBehaviour
             case RoomKind.Shop: return shopRoomColor;
             case RoomKind.Boss: return bossRoomColor;
             default: return normalRoomColor;
+        }
+    }
+
+    private static string RoomSymbol(RoomKind kind)
+    {
+        switch (kind)
+        {
+            case RoomKind.Start: return "시";
+            case RoomKind.Elite: return "정";
+            case RoomKind.Treasure: return "보";
+            case RoomKind.Shop: return "상";
+            case RoomKind.Boss: return "왕";
+            default: return "전";
         }
     }
 

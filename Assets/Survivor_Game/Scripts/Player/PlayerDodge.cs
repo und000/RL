@@ -8,6 +8,9 @@ using UnityEngine.InputSystem;
 [AddComponentMenu("Player/Player Dodge")]
 public class PlayerDodge : MonoBehaviour
 {
+    [Header("즉시 회피 입력")]
+    [Tooltip("켜면 Space를 누른 순간 회피하고 Shift로 달립니다. 끄면 기존 짧게 누르기/길게 누르기를 사용합니다.")]
+    [SerializeField] private bool separateSprintInput = true;
     [Header("입력 (Space)")]
     [Tooltip("이 시간보다 짧게 눌렀다 떼면 회피가 나가고, 이 시간을 넘겨 계속 누르고 있으면 " +
         "전력 질주(대쉬)만 켜지고 회피는 나가지 않는다.")]
@@ -77,6 +80,13 @@ public class PlayerDodge : MonoBehaviour
             return;
         }
 
+        if (separateSprintInput)
+        {
+            playerMovement.SetSprinting(!isDodging && keyboard.leftShiftKey.isPressed);
+            if (keyboard.spaceKey.wasPressedThisFrame) TryStartDodge();
+            return;
+        }
+
         if (keyboard.spaceKey.wasPressedThisFrame)
         {
             spaceHeld = true;
@@ -105,7 +115,7 @@ public class PlayerDodge : MonoBehaviour
     private void TryStartDodge()
     {
         if (isDodging || Time.time < nextDodgeTime) return;
-
+        playerMovement.RefreshMoveInput();
         Vector2 direction = playerMovement.MoveInput.sqrMagnitude > 0f
             ? playerMovement.MoveInput.normalized
             : playerMovement.LastMoveDirection;

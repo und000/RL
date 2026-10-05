@@ -100,13 +100,14 @@ public static class MetaEffectFormat
 
     public static string StatValue(ChipStatKind stat, float total)
     {
-        if (IsRate(stat)) return "+" + Percent(total);
+        string sign = total >= 0f ? "+" : "";
+        if (IsRate(stat)) return sign + Percent(total);
         // 소수를 쓰는 값과 정수로만 오르는 값을 나눠 적는다.
         if (stat == ChipStatKind.EnergyRegeneration || stat == ChipStatKind.PickupRange)
         {
-            return "+" + total.ToString("0.##");
+            return sign + total.ToString("0.##");
         }
-        return "+" + Mathf.RoundToInt(total);
+        return sign + Mathf.RoundToInt(total);
     }
 
     public static string Percent(float rate) =>

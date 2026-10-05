@@ -6,6 +6,11 @@ public class PlayerHealth : MonoBehaviour
 {
     [SerializeField, Min(1)] private int maxHealth = 5;
 
+    [Header("연속 피격 보호")]
+    [Tooltip("한 번 피해를 받은 뒤 다른 적·투사체의 겹침 피해를 막는 게임 시간. 0이면 비활성입니다.")]
+    [SerializeField, Min(0f)] private float hitInvulnerableDuration = 0.35f;
+    private float hitInvulnerableUntil;
+
     [Header("레벨별 최대 체력 성장")]
     [Tooltip("첫 레벨업에 적용되는 최대 체력 증가율입니다.")]
     [SerializeField, Range(0f, 1f)] private float startingHealthGrowthRate = 0.1f;
@@ -97,11 +102,12 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(int damage)
     {
         if (damage <= 0 || isDead || isDodgeInvulnerable || isTeleportInvulnerable ||
-            isReviveInvulnerable)
+            isReviveInvulnerable || Time.time < hitInvulnerableUntil)
         {
             return;
         }
 
+        hitInvulnerableUntil = Time.time + hitInvulnerableDuration;
         currentHealth = Mathf.Max(currentHealth - damage, 0);
         lowerbodyFacing?.PlayHit();
         OnHealthChanged?.Invoke();

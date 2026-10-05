@@ -54,6 +54,13 @@ public class EnemyProjectileAttackPattern : EnemyAttackPattern
     protected override float Cooldown => attackInterval;
     protected override float InitialDelay => firstAttackDelay;
 
+    public string DescribeAttack()
+    {
+        string volley = projectilesPerShot > 1 ? projectilesPerShot + "방향 산탄" : "단발 사격";
+        if (shotCount > 1) volley += " · " + shotCount + "연사";
+        return volley;
+    }
+
     protected override void Awake()
     {
         base.Awake();

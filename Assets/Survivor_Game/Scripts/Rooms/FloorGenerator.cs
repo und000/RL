@@ -11,6 +11,17 @@ public class GeneratedFloor
     public FloorExit Exit;
     public Transform Root;
 
+    public int RemainingCombatRooms
+    {
+        get
+        {
+            int count = 0;
+            foreach (RoomInstance room in Rooms)
+                if (room != null && room.IsCombatRoom && !room.IsCleared) count++;
+            return count;
+        }
+    }
+
     public bool IsCombatCleared
     {
         get

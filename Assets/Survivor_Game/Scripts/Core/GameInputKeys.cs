@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 /// </summary>
 public static class GameInputKeys
 {
-    public static bool IsGameplayBlocked => LevelUpUI.IsPopupOpen || RoomChoiceUI.IsBlockingGameplay || StageTransitionUI.IsBlockingGameplay;
+    public static bool IsGameplayBlocked => LevelUpUI.IsPopupOpen || RoomChoiceUI.IsBlockingGameplay || StageTransitionUI.IsBlockingGameplay || CoreBoardView.IsBlockingGameplay || RunPauseUI.IsBlockingGameplay;
     /// <summary>
     /// 상호작용 키. 보상 받침대와 바닥 드롭이 모두 이 키를 쓴다.
     /// 전부 다른 키로 바꾸려면 이 한 줄만 고치면 되고, 화면에 뜨는 안내 문구도

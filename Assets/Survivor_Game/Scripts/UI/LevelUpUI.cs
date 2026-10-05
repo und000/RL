@@ -92,12 +92,21 @@ public class LevelUpUI : MonoBehaviour
         if (!ownsPause) TryShowNext();
     }
 
-    private List<RoomRewardDefinition> Eligible() => rewardPool.GetEligible(item => item.CanGrant(player));
+    private List<RoomRewardDefinition> Eligible()
+    {
+        var items = rewardPool.GetEligible(item => item.CanGrant(player));
+        PlayerEquipment equipment = player != null ? player.GetComponentInChildren<PlayerEquipment>() : null;
+        if (equipment == null) return items;
+        var useful = items.FindAll(item => item.Kind != RoomRewardKind.Equipment || item.Equipment == null ||
+            !RewardPresentation.IsStrictDowngrade(item.Equipment, equipment.GetEquipped(item.Equipment.Slot)));
+        // 커스텀 풀에서도 4택1 진행을 막지 않는다.
+        return useful.Count >= LevelUpRewardDraft.ChoiceCount ? useful : items;
+    }
 
     private void TryShowNext()
     {
         if (!isActiveAndEnabled || configurationFailed || ownsPause || IsPopupOpen || RunEnded ||
-            pendingLevels.Count == 0 || Time.timeScale <= 0f || RoomChoiceUI.IsBlockingGameplay || StageTransitionUI.IsBlockingGameplay) return;
+            pendingLevels.Count == 0 || Time.timeScale <= 0f || RoomChoiceUI.IsBlockingGameplay || StageTransitionUI.IsBlockingGameplay || CoreBoardView.IsBlockingGameplay || RunPauseUI.IsBlockingGameplay) return;
         if (!draft.Refresh(Eligible(), false))
         {
             configurationFailed = true;
@@ -112,7 +121,7 @@ public class LevelUpUI : MonoBehaviour
         lastActionFrame = Time.frameCount;
         int level = pendingLevels.Dequeue();
         if (titleText != null) titleText.text = "LEVEL UP!  Lv. " + level;
-        if (messageText != null) messageText.text = "아이템 하나를 선택하세요";
+        if (messageText != null) messageText.text = "아이템 하나 선택 · Tab: 현재 보드 열람 · 리롤은 런 전체 3회";
         levelUpPanel.SetActive(true);
         RefreshCards();
         if (UnityEngine.EventSystems.EventSystem.current != null)
@@ -127,20 +136,18 @@ public class LevelUpUI : MonoBehaviour
             ChoiceSlot slot = slots[i];
             slot.button.interactable = true;
             if (slot.title != null) { slot.title.text = item.DisplayName; slot.title.color = item.GradeColor; }
-            if (slot.description != null) slot.description.text = string.IsNullOrWhiteSpace(item.Description) ? item.BuildLabel() : item.Description;
+            if (slot.description != null) slot.description.text = RewardPresentation.Describe(item, player);
             if (slot.icon != null)
             {
-                slot.icon.sprite = item.Icon;
-                slot.icon.preserveAspect = true;
-                slot.icon.enabled = item.Icon != null;
+                RewardPresentation.RenderIcon(slot.icon, item);
             }
         }
         TMP_Text label = rerollButton.GetComponentInChildren<TMP_Text>(true);
-        if (label != null) label.text = "리롤 · 남은 " + RemainingRerolls + "회";
+        if (label != null) label.text = "런 리롤 · 남은 " + RemainingRerolls + "회";
         rerollButton.interactable = RemainingRerolls > 0 && draft.HasAlternative(Eligible());
     }
 
-    private bool CanAct => isActiveAndEnabled && ownsPause && !RunEnded && Time.frameCount > lastActionFrame;
+    private bool CanAct => isActiveAndEnabled && ownsPause && !RunEnded && !CoreBoardView.IsBlockingGameplay && Time.frameCount > lastActionFrame;
 
     public void Reroll()
     {

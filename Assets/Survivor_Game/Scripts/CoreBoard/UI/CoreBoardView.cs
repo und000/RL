@@ -14,6 +14,15 @@ using UnityEngine.UI;
 [AddComponentMenu("Core Board/Core Board View")]
 public class CoreBoardView : MonoBehaviour
 {
+    private static CoreBoardView active;
+    private static int blockedThroughFrame = -1;
+    public static bool IsBlockingGameplay => active != null || Time.frameCount <= blockedThroughFrame;
+    private bool ownsPause;
+    private float previousTimeScale;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetState() { active = null; blockedThroughFrame = -1; }
+
     [Header("연결")]
     [Tooltip("비워 두면 씬에서 찾는다.")]
     [SerializeField] private CoreBoardController board;
@@ -72,6 +81,7 @@ public class CoreBoardView : MonoBehaviour
     private RectTransform dragLayer;
     private TMP_Text circuitLabel;
     private TMP_Text hintLabel;
+    private TMP_Text chipDetails;
     private Camera uiCamera;
 
     private Vector2 boardPixelSize;
@@ -93,6 +103,7 @@ public class CoreBoardView : MonoBehaviour
     {
         get
         {
+            if (LevelUpUI.IsPopupOpen) return false;
             if (runManager == null || runManager.CurrentFloor == null) return true;
             foreach (RoomInstance room in runManager.CurrentFloor.Rooms)
             {
@@ -114,6 +125,12 @@ public class CoreBoardView : MonoBehaviour
         uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
             ? canvas.worldCamera
             : null;
+        // 레벨업 카드 위에서도 보드 열람을 지원한다. 스테이지 전환 화면(30000)보다는 아래다.
+        Canvas overlay = GetComponent<Canvas>();
+        if (overlay == null) overlay = gameObject.AddComponent<Canvas>();
+        overlay.overrideSorting = true;
+        overlay.sortingOrder = 20000;
+        if (GetComponent<GraphicRaycaster>() == null) gameObject.AddComponent<GraphicRaycaster>();
     }
 
     private void Start()
@@ -140,6 +157,7 @@ public class CoreBoardView : MonoBehaviour
 
     private void OnDestroy()
     {
+        SetOpen(false);
         if (board != null)
         {
             board.OnBoardChanged -= HandleBoardChanged;
@@ -150,6 +168,11 @@ public class CoreBoardView : MonoBehaviour
 
     private void Update()
     {
+        if (runManager != null && runManager.IsRunOver)
+        {
+            SetOpen(false);
+            return;
+        }
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null) return;
 
@@ -167,6 +190,31 @@ public class CoreBoardView : MonoBehaviour
 
     public void SetOpen(bool open)
     {
+        if (open == isOpen)
+        {
+            if (panel != null) panel.gameObject.SetActive(open);
+            return;
+        }
+        if (open && (StageTransitionUI.IsBlockingGameplay || RoomChoiceUI.IsBlockingGameplay || RunPauseUI.IsBlockingGameplay ||
+            (runManager != null && runManager.IsRunOver) || (active != null && active != this))) return;
+        if (open)
+        {
+            StaggerImpactFeedback.CancelActive();
+            active = this;
+            // 보상창 위의 열람은 기존 일시정지를 빌린다. 닫을 때 보상창의 정지를 풀지 않는다.
+            ownsPause = !LevelUpUI.IsPopupOpen && Time.timeScale > 0f;
+            if (ownsPause) { previousTimeScale = Time.timeScale; Time.timeScale = 0f; }
+            root.SetAsLastSibling();
+        }
+        else
+        {
+            if (ownsPause && (runManager == null || !runManager.IsRunOver) &&
+                !LevelUpUI.IsPopupOpen && !StageTransitionUI.IsBlockingGameplay && Mathf.Approximately(Time.timeScale, 0f))
+                Time.timeScale = previousTimeScale;
+            ownsPause = false;
+            if (active == this) active = null;
+            blockedThroughFrame = Time.frameCount;
+        }
         isOpen = open;
         // 루트는 계속 살려 둬야 Update가 돌아 Tab으로 다시 열 수 있다.
         if (panel != null) panel.gameObject.SetActive(open);
@@ -179,6 +227,8 @@ public class CoreBoardView : MonoBehaviour
         if (needsRebuild) RebuildAll();
         else RefreshLabels();
     }
+
+    private void OnDisable() { SetOpen(false); }
 
     // 화면 뼈대 ---------------------------------------------------------
 
@@ -206,6 +256,13 @@ public class CoreBoardView : MonoBehaviour
         title.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 30f);
         title.anchoredPosition = new Vector2(0f, windowSize.y * 0.5f - windowPadding.y - 15f);
         CreateLabel(title, "코어 보드", 22f, TextAlignmentOptions.Left);
+        RectTransform detailsPanel = CreateChild("ChipDetails", window);
+        detailsPanel.sizeDelta = new Vector2(270f, 310f);
+        detailsPanel.anchoredPosition = new Vector2(windowSize.x * .5f + 145f, 0f);
+        CreateImage(detailsPanel, windowColor, false);
+        RectTransform detailsText = CreateChild("Text", detailsPanel);
+        detailsText.sizeDelta = new Vector2(245f, 285f);
+        chipDetails = CreateLabel(detailsText, "칩에 마우스를 올리면\n효과와 활성 상태를 확인합니다.", 18f, TextAlignmentOptions.TopLeft);
 
         boardArea = CreateChild("BoardArea", window);
         boardArea.sizeDelta = boardPixelSize;
@@ -445,11 +502,18 @@ public class CoreBoardView : MonoBehaviour
         {
             hintLabel.text = EditingAllowed
                 ? "드래그로 배치 · R 회전 · 우클릭으로 빼기"
-                : "전투 중에는 배치를 바꿀 수 없습니다";
+                : LevelUpUI.IsPopupOpen ? "보상 선택 중에는 열람만 가능합니다 · Tab 닫기" : "전투 중에는 열람만 가능합니다 · Tab 닫기";
             hintLabel.color = EditingAllowed
                 ? new Color(0.55f, 0.62f, 0.7f)
                 : new Color(1f, 0.55f, 0.4f);
         }
+    }
+
+    public void ShowChipDetails(ChipView view)
+    {
+        if (view == null || view.Chip == null || chipDetails == null) return;
+        string status = view.PlacedId == 0 ? "미장착" : board.State.IsEnergized(board.State.GetChip(view.PlacedId)) ? "활성" : "전원 미연결";
+        chipDetails.text = view.Chip.DisplayName + " · " + status + "\n\n" + RewardPresentation.DescribeChip(view.Chip, board);
     }
 
     // 드래그 ------------------------------------------------------------

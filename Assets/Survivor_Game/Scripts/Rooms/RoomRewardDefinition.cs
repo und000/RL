@@ -89,7 +89,8 @@ public class RoomRewardDefinition : ScriptableObject
     public string Description => description;
     public Sprite Icon => icon != null ? icon : kind == RoomRewardKind.Weapon && weapon != null
         ? weapon.Icon : kind == RoomRewardKind.SpecialAttack && specialAttack != null
-        ? specialAttack.Icon : chip != null ? chip.Icon : null;
+        ? specialAttack.Icon : kind == RoomRewardKind.Equipment && equipment != null
+        ? equipment.Icon : chip != null ? chip.Icon : null;
     public WeaponSkillProfile SpecialAttack => specialAttack;
     public Color TintColor => tintColor;
     public RoomRewardKind Kind => kind;

@@ -120,7 +120,9 @@ public class RunResultUI : MonoBehaviour
         if (pending || shown) return;
 
         if (titleText != null) titleText.text = title;
-        if (detailText != null) detailText.text = detail;
+        if (detailText != null) detailText.text = detail + "\n완료한 전투방 " + runManager.CompletedCombatRooms + "개" +
+            "\n전투 " + FormatTime(runManager.CombatSeconds) + " · 이동 " + FormatTime(runManager.ExplorationSeconds) +
+            " · 보상/보드 " + FormatTime(runManager.RewardSeconds);
 
         pending = true;
         // 게임이 멈춘 뒤에도 대기 시간이 흘러야 하므로 실제 시간으로 잰다.
@@ -134,6 +136,12 @@ public class RunResultUI : MonoBehaviour
         pending = false;
         resultPanel.SetActive(true);
         if (pauseOnShow) Time.timeScale = 0f;
+    }
+
+    private static string FormatTime(float seconds)
+    {
+        int total = Mathf.FloorToInt(seconds);
+        return (total / 60) + ":" + (total % 60).ToString("00");
     }
 
     /// <summary>런에서 남긴 것을 가지고 첫 화면으로 돌아가 기체를 손보게 한다.</summary>
