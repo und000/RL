@@ -17,6 +17,7 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
         public int damage;
         public float lifetime;
         public bool alignToDirection;
+        public EnemyAttackContext attackContext;
     }
 
     private static EnemyProjectileEmissionScheduler instance;
@@ -39,9 +40,10 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
         float speed,
         int damage,
         float lifetime,
-        bool alignToDirection)
+        bool alignToDirection,
+        EnemyAttackContext attackContext = null)
     {
-        if (prefab == null) return;
+        if (prefab == null || (attackContext != null && attackContext.IsCancelled)) return;
         Emission emission = new Emission
         {
             executeAt = Time.time + Mathf.Max(0f, delay),
@@ -55,7 +57,8 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
             speed = Mathf.Max(0f, speed),
             damage = Mathf.Max(1, damage),
             lifetime = Mathf.Max(0.01f, lifetime),
-            alignToDirection = alignToDirection
+            alignToDirection = alignToDirection,
+            attackContext = attackContext
         };
         if (delay <= 0f)
         {
@@ -71,6 +74,11 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
         for (int index = emissions.Count - 1; index >= 0; index--)
         {
             Emission emission = emissions[index];
+            if (emission.attackContext != null && emission.attackContext.IsCancelled)
+            {
+                emissions.RemoveAt(index);
+                continue;
+            }
             if (Time.time < emission.executeAt) continue;
             emissions.RemoveAt(index);
             Emit(emission);
@@ -79,15 +87,11 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
 
     private static void Emit(Emission emission)
     {
+        if (emission.attackContext != null && emission.attackContext.IsCancelled) return;
         for (int index = 0; index < emission.count; index++)
         {
-            float spreadOffset = emission.count == 1
-                ? 0f
-                : Mathf.Lerp(-emission.spread * 0.5f, emission.spread * 0.5f,
-                    (float)index / (emission.count - 1));
-            Vector2 direction = Rotate(
-                emission.direction,
-                emission.angleOffset + spreadOffset);
+            Vector2 direction = EnemyAttackGeometry.VolleyDirection(
+                emission.direction, index, emission.count, emission.spread, emission.angleOffset);
             EnemyProjectile.Spawn(
                 emission.prefab,
                 emission.position,
@@ -95,7 +99,8 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
                 emission.speed,
                 emission.damage,
                 emission.lifetime,
-                emission.alignToDirection);
+                emission.alignToDirection,
+                emission.attackContext);
         }
     }
 
@@ -107,14 +112,9 @@ public sealed class EnemyProjectileEmissionScheduler : MonoBehaviour
         return instance;
     }
 
-    private static Vector2 Rotate(Vector2 direction, float degrees)
+    public static void CancelPendingInScene(UnityEngine.SceneManagement.Scene scene)
     {
-        float radians = degrees * Mathf.Deg2Rad;
-        float cosine = Mathf.Cos(radians);
-        float sine = Mathf.Sin(radians);
-        return new Vector2(
-            direction.x * cosine - direction.y * sine,
-            direction.x * sine + direction.y * cosine).normalized;
+        if (instance != null && instance.gameObject.scene == scene) instance.emissions.Clear();
     }
 
     private void OnDestroy()

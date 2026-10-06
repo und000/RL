@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyProfile_Enemy106
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProfile
   enemyId: Enemy106
-  displayName: "\uC885\uACB0"
+  displayName: "심층 집행자"
   rank: 2
   maxHealth: 1200
   defense: 22
@@ -29,3 +29,5 @@ MonoBehaviour:
   staggerDecayPerSecond: 10
   staggerRecoveryImmunity: 0.5
   eliteStaggerMultiplier: 2
+  encounterDescription: "촘촘한 원형 연사 · 탄 사이 틈 회전\n체력 70% / 40%에서 사격 변화"
+  signatureReward: {fileID: 11400000, guid: 374d2defe641eec48b07b22d6e36c469, type: 2}

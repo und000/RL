@@ -143,6 +143,46 @@ public sealed class CoreBoardState
     public bool TryPlace(ChipDefinition chip, Vector2Int origin, int rotation) =>
         TryPlace(chip, origin, rotation, out _);
 
+    /// <summary>원본 배치·ID·이벤트를 바꾸지 않고 동일한 회로 계산으로 배치 결과를 구한다.</summary>
+    public bool TryPreviewPlacement(ChipDefinition chip, Vector2Int origin, int rotation,
+        int movingId, out CoreBoardState preview, out PlacedChip proposed)
+    {
+        preview = null;
+        proposed = null;
+        if (movingId != 0 && (GetChip(movingId) == null || GetChip(movingId).Chip != chip)) return false;
+        if (!CanPlace(chip, origin, rotation, movingId).IsValid) return false;
+        preview = CopyForPreview();
+        if (movingId != 0)
+        {
+            preview.TryMove(movingId, origin, rotation);
+            proposed = preview.GetChip(movingId);
+        }
+        else preview.TryPlace(chip, origin, rotation, out proposed);
+        return true;
+    }
+
+    public bool TryPreviewRemoval(int id, out CoreBoardState preview)
+    {
+        preview = null;
+        if (GetChip(id) == null) return false;
+        preview = CopyForPreview();
+        return preview.Remove(id);
+    }
+
+    private CoreBoardState CopyForPreview()
+    {
+        var copy = new CoreBoardState(layout, tuning);
+        copy.nextId = nextId;
+        foreach (PlacedChip placed in placements.Values)
+        {
+            var clone = new PlacedChip(placed.Id, placed.Chip, placed.Origin, placed.Rotation);
+            copy.placements.Add(clone.Id, clone);
+            copy.Stamp(clone, clone.Id);
+        }
+        // 이어지는 TryPlace/TryMove/Remove가 복사된 배치의 회로를 계산한다.
+        return copy;
+    }
+
     /// <summary>이미 꽂힌 칩을 다른 자리나 다른 회전으로 옮긴다. 실패하면 원래 자리를 유지한다.</summary>
     public bool TryMove(int id, Vector2Int origin, int rotation)
     {

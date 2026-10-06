@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyProfile_Enemy103
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProfile
   enemyId: Enemy103
-  displayName: "\uC5F0\uC0AC"
+  displayName: "추적 사수"
   rank: 2
   maxHealth: 800
   defense: 14
@@ -29,3 +29,5 @@ MonoBehaviour:
   staggerDecayPerSecond: 10
   staggerRecoveryImmunity: 0.5
   eliteStaggerMultiplier: 2
+  encounterDescription: "매번 재조준하는 고속 연사\n체력 70% / 40%에서 사격 변화"
+  signatureReward: {fileID: 11400000, guid: e48161289586154479b900c9235fda64, type: 2}

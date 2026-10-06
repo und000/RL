@@ -23,6 +23,7 @@ public readonly struct DamageData
     public readonly float TrueDamage;
     public readonly int MinimumDamage;
     public readonly float StaggerImpact;
+    public readonly PlayerCombatStats Source;
 
     public DamageData(
         float normalDamage,
@@ -30,7 +31,8 @@ public readonly struct DamageData
         int flatArmorPenetration,
         float trueDamage,
         int minimumDamage,
-        float staggerImpact = 0f)
+        float staggerImpact = 0f,
+        PlayerCombatStats source = null)
     {
         NormalDamage = Mathf.Max(0f, normalDamage);
         ArmorPenetrationRate = Mathf.Clamp01(armorPenetrationRate);
@@ -38,10 +40,11 @@ public readonly struct DamageData
         TrueDamage = Mathf.Max(0f, trueDamage);
         MinimumDamage = Mathf.Max(1, minimumDamage);
         StaggerImpact = Mathf.Max(0f, staggerImpact);
+        Source = source;
     }
 
     public DamageData WithStaggerImpact(float impact) => new DamageData(
-        NormalDamage, ArmorPenetrationRate, FlatArmorPenetration, TrueDamage, MinimumDamage, impact);
+        NormalDamage, ArmorPenetrationRate, FlatArmorPenetration, TrueDamage, MinimumDamage, impact, Source);
 }
 
 [RequireComponent(typeof(PlayerLevel))]
@@ -73,6 +76,9 @@ public class PlayerCombatStats : MonoBehaviour
     [SerializeField, Min(1)] private int minimumNormalDamage = 10;
 
     private PlayerLevel playerLevel;
+    public event Action<bool, bool> OnEnemyHit;
+
+    public void ReportEnemyHit(bool killed, bool staggered) => OnEnemyHit?.Invoke(killed, staggered);
 
     private void Awake()
     {
@@ -100,7 +106,7 @@ public class PlayerCombatStats : MonoBehaviour
             source.ArmorPenetrationRate,
             source.FlatArmorPenetration,
             source.TrueDamage,
-            source.MinimumDamage);
+            source.MinimumDamage, source: this);
     }
 
     private DamageData CreateDamageDataFromBaseAttack(
@@ -119,7 +125,8 @@ public class PlayerCombatStats : MonoBehaviour
             armorPenetrationRate,
             flatArmorPenetration,
             trueDamage,
-            minimumNormalDamage
+            minimumNormalDamage,
+            source: this
         );
     }
 

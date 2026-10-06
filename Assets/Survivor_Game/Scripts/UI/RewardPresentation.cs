@@ -77,6 +77,9 @@ public static class RewardPresentation
             var text = new StringBuilder();
             text.AppendLine(current != null ? "교체: " + current.DisplayName : "빈 부위에 장착");
             AppendStats(text, proposed, current != null ? previous : null);
+            AppendReaction(text, reward.Equipment.ReactiveEffect);
+            if (current != null && current.ReactiveEffect != null && current.ReactiveEffect.IsConfigured)
+                text.AppendLine("교체로 잃음: " + current.ReactiveEffect.Describe());
             if (current != null) text.Append("이전 부품은 바닥에 보관됩니다.");
             return text.ToString().TrimEnd();
         }
@@ -97,6 +100,9 @@ public static class RewardPresentation
         var stats = new CoreBoardStats();
         chip.ApplyModifiers(stats);
         AppendStats(text, stats, null);
+        AppendReaction(text, chip.ReactiveEffect);
+        if (chip.ReactiveEffect != null && chip.ReactiveEffect.IsConfigured)
+            text.AppendLine("발동 효과는 동일 칩 중복/회로 증폭 제외");
         text.AppendLine(chip.NeedsCurrent ? "배치 후 전원 연결 필요" : "배치하면 적용 · 전원 불필요");
         if (board != null && board.IsReady)
             text.AppendLine(CanFit(chip, board.State) ? "현재 빈칸에 배치 가능" : "배치하려면 보드 재정리 필요");
@@ -125,6 +131,11 @@ public static class RewardPresentation
         return false;
     }
 
+    private static void AppendReaction(StringBuilder text, ReactiveItemEffect effect)
+    {
+        if (effect != null && effect.IsConfigured) text.AppendLine(effect.Describe());
+    }
+
     private static void AppendStats(StringBuilder text, CoreBoardStats proposed, CoreBoardStats previous)
     {
         foreach (ChipStatKind kind in Enum.GetValues(typeof(ChipStatKind)))
@@ -147,6 +158,8 @@ public static class RewardPresentation
     public static bool IsStrictDowngrade(EquipmentDefinition candidate, EquipmentDefinition current)
     {
         if (candidate == null || current == null || candidate.Slot != current.Slot) return false;
+        // 조건부 효과는 단순 스탯 우열로 제외하지 않는다.
+        if (candidate.ReactiveEffect != null && candidate.ReactiveEffect.IsConfigured) return false;
         var a = new CoreBoardStats();
         var b = new CoreBoardStats();
         candidate.ApplyModifiers(a);

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyProfile_Enemy102
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProfile
   enemyId: Enemy102
-  displayName: "\uC0B0\uD0C4"
+  displayName: "철갑 분쇄기"
   rank: 2
   maxHealth: 700
   defense: 12
@@ -29,3 +29,5 @@ MonoBehaviour:
   staggerDecayPerSecond: 10
   staggerRecoveryImmunity: 0.5
   eliteStaggerMultiplier: 2
+  encounterDescription: "넓은 산탄 · 후반 교차 사격\n체력 70% / 40%에서 사격 변화"
+  signatureReward: {fileID: 11400000, guid: 962faafbfcd01c64ba38e0632b1a3441, type: 2}

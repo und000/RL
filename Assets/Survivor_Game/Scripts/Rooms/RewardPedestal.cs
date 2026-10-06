@@ -151,6 +151,8 @@ public class RewardPedestal : MonoBehaviour
 
         string line = BuildDisplayLine() +
             "\n" + GameInputKeys.InteractPrompt + " 획득";
+        if (overlappingPlayer != null && !string.IsNullOrEmpty(reward.ReactiveDescription))
+            line += "\n" + reward.ReactiveDescription;
         if (line == lastLabelLine) return;
 
         lastLabelLine = line;

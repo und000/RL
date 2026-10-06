@@ -253,6 +253,7 @@ MonoBehaviour:
   stopDuration: 0.5
   dashDuration: 0.6
   dashSpeed: 7
+  telegraphPrefab: {fileID: 1003, guid: 3bac4c031f0d4bddbfbfc8387877a942, type: 3}
 --- !u!114 &3755170266350585659
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Equipment_Coolant_Loop
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentDefinition
   displayName: "\uC21C\uD658 \uB0C9\uAC01\uACC4"
-  description: "\uC561\uCCB4\uB97C \uB3CC\uB824 \uC5F4\uC744 \uC2E4\uC5B4 \uB0B8\uB2E4."
+  description: "직접 처치하면 MP를 회수하는 순환 냉각계."
   icon: {fileID: 0}
   slot: 3
   grade: 1
@@ -22,3 +22,8 @@ MonoBehaviour:
     value: 6
   - stat: 8
     value: 1.2
+  reactiveEffect:
+    trigger: 0
+    action: 0
+    amount: 3
+    cooldown: 1

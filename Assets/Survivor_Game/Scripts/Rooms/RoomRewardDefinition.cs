@@ -87,6 +87,16 @@ public class RoomRewardDefinition : ScriptableObject
     }
 
     public string Description => description;
+    public string ReactiveDescription
+    {
+        get
+        {
+            ReactiveItemEffect effect = kind == RoomRewardKind.Equipment && equipment != null
+                ? equipment.ReactiveEffect : kind == RoomRewardKind.Chip && chip != null ? chip.ReactiveEffect : null;
+            if (effect == null || !effect.IsConfigured) return string.Empty;
+            return effect.Describe() + (kind == RoomRewardKind.Chip ? "\n활성 배치 필요 · 동일 칩 발동 중복 없음" : string.Empty);
+        }
+    }
     public Sprite Icon => icon != null ? icon : kind == RoomRewardKind.Weapon && weapon != null
         ? weapon.Icon : kind == RoomRewardKind.SpecialAttack && specialAttack != null
         ? specialAttack.Icon : kind == RoomRewardKind.Equipment && equipment != null

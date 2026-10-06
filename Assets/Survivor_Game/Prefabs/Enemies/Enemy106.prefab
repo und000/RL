@@ -82,7 +82,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 3200eeca71197a846b612e3cc0603729, type: 2}
     - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
       propertyPath: shotCount
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
       propertyPath: spreadAngle
@@ -115,6 +115,74 @@ PrefabInstance:
     - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
       propertyPath: projectilesPerShot
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: aimMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[0].minimumPhase
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[0].projectileCount
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[0].spread
+      value: 360
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[0].shots
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[0].angleStep
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[1].minimumPhase
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[1].projectileCount
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[1].spread
+      value: 360
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[1].shots
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[1].angleStep
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[2].minimumPhase
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[2].projectileCount
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[2].spread
+      value: 360
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[2].shots
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000011, guid: d4444444444444444444444444444444, type: 3}
+      propertyPath: phaseVolleys.Array.data[2].angleStep
+      value: 12.857
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

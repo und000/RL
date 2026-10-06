@@ -88,6 +88,7 @@ public class PlayerHealth : MonoBehaviour
     public int GetCurrentHealth() => currentHealth;
     public int GetMaxHealth() => maxHealth;
     public bool IsDead => isDead;
+    public PlayerDamageHistory DamageHistory { get; } = new PlayerDamageHistory();
 
     /// <summary>체력을 회복한다. 이미 가득 찼거나 쓰러진 뒤면 false를 돌려준다.</summary>
     public bool Heal(int amount)
@@ -99,7 +100,7 @@ public class PlayerHealth : MonoBehaviour
         return true;
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, string sourceName = null, PlayerDamageKind kind = PlayerDamageKind.Unknown)
     {
         if (damage <= 0 || isDead || isDodgeInvulnerable || isTeleportInvulnerable ||
             isReviveInvulnerable || Time.time < hitInvulnerableUntil)
@@ -108,7 +109,9 @@ public class PlayerHealth : MonoBehaviour
         }
 
         hitInvulnerableUntil = Time.time + hitInvulnerableDuration;
+        int healthBefore = currentHealth;
         currentHealth = Mathf.Max(currentHealth - damage, 0);
+        DamageHistory.Record(healthBefore - currentHealth, sourceName, kind);
         lowerbodyFacing?.PlayHit();
         OnHealthChanged?.Invoke();
 

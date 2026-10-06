@@ -13,6 +13,8 @@ public class Enemy2MovementPattern : EnemyMovementPatternBase
     [Header("돌진")]
     [SerializeField, Min(0f)] private float dashDuration = 0.6f;
     [SerializeField, Min(0f)] private float dashSpeed = 7f;
+    [SerializeField] private EnemyAttackTelegraph telegraphPrefab;
+    private EnemyAttackTelegraph telegraph;
 
     private State state;
     private float stateElapsedTime;
@@ -20,6 +22,7 @@ public class Enemy2MovementPattern : EnemyMovementPatternBase
 
     protected override void ResetPattern()
     {
+        if (telegraph != null) telegraph.Hide();
         state = State.Chase;
         stateElapsedTime = 0f;
         dashDirection = Vector2.zero;
@@ -32,13 +35,22 @@ public class Enemy2MovementPattern : EnemyMovementPatternBase
         {
             case State.Chase:
                 Body.linearVelocity = DirectionToTarget() * chaseSpeed;
-                TryAdvance(chaseDuration, State.Stop);
+                if (TryAdvance(chaseDuration, State.Stop))
+                {
+                    Body.linearVelocity = Vector2.zero;
+                    dashDirection = DirectionToTarget();
+                    if (telegraph == null && telegraphPrefab != null)
+                        telegraph = Instantiate(telegraphPrefab, transform);
+                }
                 break;
             case State.Stop:
                 Body.linearVelocity = Vector2.zero;
+                if (telegraph != null)
+                    telegraph.Show(transform.position, dashDirection, 1, 0f, 0f,
+                        dashSpeed * dashDuration, stopDuration > 0f ? stateElapsedTime / stopDuration : 1f);
                 if (TryAdvance(stopDuration, State.Dash))
                 {
-                    dashDirection = DirectionToTarget();
+                    if (telegraph != null) telegraph.Hide();
                 }
                 break;
             default:
@@ -58,5 +70,11 @@ public class Enemy2MovementPattern : EnemyMovementPatternBase
         state = nextState;
         stateElapsedTime = 0f;
         return true;
+    }
+
+    protected override void OnDisable()
+    {
+        ResetPattern();
+        base.OnDisable();
     }
 }

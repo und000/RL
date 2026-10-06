@@ -338,16 +338,33 @@ MonoBehaviour:
   projectileDamage: 10
   projectileLifeTime: 6
   alignProjectileToDirection: 0
-  aimMode: 0
+  aimMode: 1
   fixedWorldDirection: {x: 0, y: -1}
-  windupDuration: 0
+  windupDuration: 0.4
+  telegraphPrefab: {fileID: 1003, guid: 9935f7ddf2f44a39a16719db5bcc885e, type: 3}
   shotCount: 1
   shotInterval: 0
   recoveryDuration: 0
-  projectilesPerShot: 1
-  spreadAngle: 0
+  projectilesPerShot: 3
+  spreadAngle: 30
   angleOffset: 0
   requireAttackGate: 0
+  phaseVolleys:
+  - minimumPhase: 1
+    projectileCount: 3
+    spread: 30
+    shots: 1
+    angleStep: 0
+  - minimumPhase: 2
+    projectileCount: 5
+    spread: 50
+    shots: 1
+    angleStep: 0
+  - minimumPhase: 3
+    projectileCount: 5
+    spread: 60
+    shots: 2
+    angleStep: 12
 --- !u!114 &8100000000000000012
 MonoBehaviour:
   m_ObjectHideFlags: 0

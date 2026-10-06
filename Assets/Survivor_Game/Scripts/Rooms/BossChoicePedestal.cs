@@ -24,7 +24,12 @@ public class BossChoicePedestal : MonoBehaviour
             GameFontManager.ApplyFont(labelText);
             EnemyProjectileAttackPattern pattern = candidate != null ? candidate.GetComponent<EnemyProjectileAttackPattern>() : null;
             string threat = pattern != null ? "\n" + pattern.DescribeAttack() : string.Empty;
-            labelText.text = title + threat + "\n" + GameInputKeys.InteractPrompt + " 전투 시작";
+            EnemyProfile profile = health != null ? health.Profile : null;
+            if (profile != null && !string.IsNullOrWhiteSpace(profile.EncounterDescription))
+                threat = "\n" + profile.EncounterDescription;
+            string reward = profile != null && profile.SignatureReward != null
+                ? "\n추가 확정: " + profile.SignatureReward.DisplayName : string.Empty;
+            labelText.text = title + threat + reward + "\n" + GameInputKeys.InteractPrompt + " 전투 시작";
         }
     }
 

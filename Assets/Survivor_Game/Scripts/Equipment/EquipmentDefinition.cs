@@ -25,6 +25,9 @@ public class EquipmentDefinition : ScriptableObject
     [Header("효과")]
     [Tooltip("칩과 같은 스탯 항목을 쓴다. 여러 줄을 넣으면 모두 더해진다.")]
     [SerializeField] private ChipStatModifier[] modifiers = Array.Empty<ChipStatModifier>();
+    [Header("행동 반응 효과")]
+    [SerializeField] private ReactiveItemEffect reactiveEffect;
+    public ReactiveItemEffect ReactiveEffect => reactiveEffect;
 
     public string DisplayName =>
         string.IsNullOrWhiteSpace(displayName) ? name : displayName;

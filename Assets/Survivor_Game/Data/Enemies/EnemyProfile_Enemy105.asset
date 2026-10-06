@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyProfile_Enemy105
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProfile
   enemyId: Enemy105
-  displayName: "\uD0C4\uB9C9"
+  displayName: "회전 포대"
   rank: 2
   maxHealth: 1000
   defense: 18
@@ -29,3 +29,5 @@ MonoBehaviour:
   staggerDecayPerSecond: 10
   staggerRecoveryImmunity: 0.5
   eliteStaggerMultiplier: 2
+  encounterDescription: "방향을 돌리며 부채꼴 연사\n체력 70% / 40%에서 사격 변화"
+  signatureReward: {fileID: 11400000, guid: 8c081825c9010ed408376c60dfa89f49, type: 2}

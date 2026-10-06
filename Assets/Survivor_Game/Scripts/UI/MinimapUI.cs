@@ -20,7 +20,7 @@ public class MinimapUI : MonoBehaviour
     [SerializeField] private Transform player;
 
     [Header("패널")]
-    [SerializeField] private Vector2 panelSize = new Vector2(240f, 170f);
+    [SerializeField] private Vector2 panelSize = new Vector2(480f, 340f);
     [Tooltip("화면 우측·하단 모서리에서 띄울 여백.")]
     [SerializeField] private Vector2 screenMargin = new Vector2(18f, 18f);
     [SerializeField, Min(0f)] private float borderThickness = 2f;
@@ -28,17 +28,11 @@ public class MinimapUI : MonoBehaviour
     [SerializeField, Min(0f)] private float innerPadding = 10f;
 
     [Header("방 칸")]
-    [SerializeField] private Vector2 roomSize = new Vector2(20f, 14f);
+    [SerializeField] private Vector2 roomSize = new Vector2(40f, 28f);
     [Tooltip("방과 방 사이 간격. 이 틈에 통로가 그려진다.")]
-    [SerializeField] private Vector2 roomGap = new Vector2(8f, 8f);
-    [SerializeField, Min(1f)] private float corridorThickness = 4f;
+    [SerializeField] private Vector2 roomGap = new Vector2(16f, 16f);
+    [SerializeField, Min(1f)] private float corridorThickness = 8f;
     [SerializeField, Min(1f)] private float playerMarkerSize = 6f;
-
-    [Header("탐색 표시")]
-    [Tooltip("지나간 방과 맞닿은 방을 미리 흐리게 보여 준다.")]
-    [SerializeField] private bool revealNeighbours = true;
-    [Tooltip("아직 발견하지 않은 방까지 전부 보여 준다. 디버그용.")]
-    [SerializeField] private bool revealEverything;
 
     [Header("색 - 틀")]
     [SerializeField] private Color borderColor = new Color(0.35f, 0.75f, 0.95f, 0.85f);
@@ -52,7 +46,7 @@ public class MinimapUI : MonoBehaviour
     [SerializeField] private Color treasureRoomColor = new Color(0.95f, 0.85f, 0.4f, 1f);
     [SerializeField] private Color shopRoomColor = new Color(0.5f, 0.8f, 0.95f, 1f);
     [SerializeField] private Color bossRoomColor = new Color(0.95f, 0.35f, 0.4f, 1f);
-    [Tooltip("출구가 있는 방의 작은 표식 색. 방을 발견하면 함께 표시한다.")]
+    [Tooltip("출구 방에 들어가 발견한 뒤 표시한다. 개방 시 이 색을 쓴다.")]
     [SerializeField] private Color exitMarkerColor = new Color(.2f, .9f, 1f, 1f);
     [Tooltip("발견만 하고 아직 들어가지 않은 방.")]
     [SerializeField] private Color undiscoveredColor = new Color(0.25f, 0.3f, 0.38f, 0.7f);
@@ -67,22 +61,55 @@ public class MinimapUI : MonoBehaviour
 
     private readonly Dictionary<RoomInstance, Image> roomIcons =
         new Dictionary<RoomInstance, Image>();
-    private readonly Dictionary<RoomInstance, TMP_Text> roomLabels = new Dictionary<RoomInstance, TMP_Text>();
-    private readonly HashSet<RoomInstance> visitedRooms = new HashSet<RoomInstance>();
+    private readonly Dictionary<RoomInstance, RoomMapIcon> glyphs = new Dictionary<RoomInstance, RoomMapIcon>();
+    private readonly Dictionary<RoomInstance, Button> buttons = new Dictionary<RoomInstance, Button>();
+    private readonly List<(RoomInstance from, RoomInstance to, Image image)> corridors = new List<(RoomInstance, RoomInstance, Image)>();
+    private bool embedded;
+    private System.Action<RoomInstance> travel;
+    private CanvasGroup visibility;
+    private float nextRefresh;
+
+    public void ConfigureEmbedded(RunManager run, System.Action<RoomInstance> onTravel)
+    {
+        runManager = run;
+        player = run != null ? run.Player : null;
+        travel = onTravel;
+        embedded = true;
+        panelSize = new Vector2(440f, 340f);
+        roomSize = new Vector2(52f, 38f);
+        roomGap = new Vector2(16f, 16f);
+        innerPadding = 32f;
+        ApplyPanelPlacement();
+        RectTransform title = CreateChild("Title", panelRect);
+        title.sizeDelta = new Vector2(420f, 26f);
+        title.anchoredPosition = new Vector2(0f, 150f);
+        AddText(title, "방 지도 · 방문한 방 클릭으로 이동", 18f);
+        RectTransform legend = CreateChild("Legend", panelRect);
+        legend.sizeDelta = new Vector2(420f, 26f);
+        legend.anchoredPosition = new Vector2(0f, -150f);
+        AddText(legend, "전투 중 이동 불가 · 출구도 발견 후 표시", 14f);
+    }
+
+    private static void AddText(RectTransform rect, string value, float size)
+    {
+        TMP_Text text = rect.gameObject.AddComponent<TextMeshProUGUI>();
+        GameFontManager.ApplyFont(text);
+        text.text = value;
+        text.fontSize = size;
+        text.alignment = TextAlignmentOptions.Center;
+        text.raycastTarget = false;
+    }
     private readonly Dictionary<Vector2Int, RoomInstance> roomsByCell =
         new Dictionary<Vector2Int, RoomInstance>();
 
     private RectTransform panelRect;
     private RectTransform contentRect;
     private RectTransform playerMarker;
-    private Image exitMarker;
+    private RoomMapIcon exitMarker;
     private GeneratedFloor floor;
     private RoomInstance currentRoom;
-    private RoomInstance lastCurrentRoom;
     private Vector2Int gridMinimum;
     private Vector2 contentSize;
-    private int lastVisitedCount = -1;
-    private int lastClearedCount = -1;
     private bool placementDirty;
 
     private void Awake()
@@ -90,6 +117,7 @@ public class MinimapUI : MonoBehaviour
         panelRect = GetComponent<RectTransform>();
         ApplyPanelPlacement();
         BuildFrame();
+        visibility = gameObject.AddComponent<CanvasGroup>();
     }
 
     private void Start()
@@ -140,7 +168,12 @@ public class MinimapUI : MonoBehaviour
         if (floor == null) return;
 
         UpdateCurrentRoom();
-        RefreshRoomColorsIfDirty();
+        visibility.alpha = !embedded && CoreBoardView.IsMenuOpen ? 0f : 1f;
+        if (Time.unscaledTime >= nextRefresh)
+        {
+            nextRefresh = Time.unscaledTime + .1f;
+            RefreshRoomColors();
+        }
         UpdatePlayerMarker();
     }
 
@@ -151,6 +184,12 @@ public class MinimapUI : MonoBehaviour
     {
         if (panelRect == null) panelRect = GetComponent<RectTransform>();
 
+        if (embedded)
+        {
+            panelRect.anchorMin = panelRect.anchorMax = panelRect.pivot = new Vector2(.5f, .5f);
+            panelRect.sizeDelta = panelSize;
+            return;
+        }
         panelRect.anchorMin = new Vector2(1f, 0f);
         panelRect.anchorMax = new Vector2(1f, 0f);
         panelRect.pivot = new Vector2(1f, 0f);
@@ -219,8 +258,7 @@ public class MinimapUI : MonoBehaviour
         BuildCorridors();
         BuildRoomIcons();
 
-        lastVisitedCount = -1;
-        lastClearedCount = -1;
+        nextRefresh = 0f;
         playerMarker.SetAsLastSibling();
     }
 
@@ -228,11 +266,11 @@ public class MinimapUI : MonoBehaviour
     {
         exitMarker = null;
         roomIcons.Clear();
-        roomLabels.Clear();
-        visitedRooms.Clear();
+        glyphs.Clear();
+        buttons.Clear();
+        corridors.Clear();
         roomsByCell.Clear();
         currentRoom = null;
-        lastCurrentRoom = null;
         floor = null;
 
         if (contentRect == null) return;
@@ -297,24 +335,40 @@ public class MinimapUI : MonoBehaviour
             Image image = CreateImage(icon, normalRoomColor);
             image.enabled = false;
             roomIcons[room] = image;
-            RectTransform labelRect = CreateChild("KindLabel", icon);
-            labelRect.sizeDelta = roomSize;
-            TMP_Text label = labelRect.gameObject.AddComponent<TextMeshProUGUI>();
-            GameFontManager.ApplyFont(label);
-            label.fontSize = 10f;
-            label.alignment = TextAlignmentOptions.Center;
-            label.raycastTarget = false;
-            label.enabled = false;
-            roomLabels[room] = label;
+            RectTransform glyphRect = CreateChild("RoomSymbol", icon);
+            glyphRect.sizeDelta = Vector2.one * (roomSize.y - 8f);
+            RoomMapIcon glyph = glyphRect.gameObject.AddComponent<RoomMapIcon>();
+            glyph.raycastTarget = false;
+            glyphs[room] = glyph;
+            if (embedded)
+            {
+                image.raycastTarget = true;
+                Button button = icon.gameObject.AddComponent<Button>();
+                button.targetGraphic = image;
+                button.transition = Selectable.Transition.None;
+                button.navigation = new Navigation { mode = Navigation.Mode.None };
+                RoomInstance target = room;
+                button.onClick.AddListener(() => travel?.Invoke(target));
+                buttons[room] = button;
+            }
             if (room == floor.ExitRoom)
             {
                 RectTransform marker = CreateChild("ExitMarker", icon);
                 marker.anchorMin = marker.anchorMax = Vector2.one;
-                marker.anchoredPosition = new Vector2(-3f, -3f);
-                marker.sizeDelta = Vector2.one * 4f;
-                exitMarker = CreateImage(marker, exitMarkerColor);
+                marker.anchoredPosition = new Vector2(-3f, 0f);
+                marker.sizeDelta = Vector2.one * 14f;
+                RoomMapIcon exitGlyph = marker.gameObject.AddComponent<RoomMapIcon>();
+                exitGlyph.SetSymbol(RoomMapSymbol.Exit);
+                exitGlyph.raycastTarget = false;
+                exitGlyph.color = exitMarkerColor;
+                exitMarker = exitGlyph;
                 exitMarker.enabled = false;
+                RectTransform exitCaption = CreateChild("ExitCaption", icon);
+                exitCaption.sizeDelta = new Vector2(roomSize.x, 12f);
+                exitCaption.anchoredPosition = new Vector2(0f, -roomSize.y * .5f - 6f);
+                AddText(exitCaption, "출구", 10f);
             }
+            icon.gameObject.SetActive(false);
         }
     }
 
@@ -335,7 +389,9 @@ public class MinimapUI : MonoBehaviour
     private void TryBuildCorridor(RoomInstance room, RoomDirection direction, Vector2 pitch)
     {
         Vector2Int neighbourCell = room.GridPosition + direction.ToOffset();
-        if (!roomsByCell.ContainsKey(neighbourCell)) return;
+        if (!roomsByCell.TryGetValue(neighbourCell, out RoomInstance neighbour)) return;
+        RoomDoor door = room.GetDoor(direction);
+        if (door == null || door.LinkedDoor == null || door.LinkedDoor.Owner != neighbour) return;
 
         bool horizontal = direction == RoomDirection.East;
         RectTransform corridor = CreateChild("Corridor_" + room.GridPosition, contentRect);
@@ -345,7 +401,9 @@ public class MinimapUI : MonoBehaviour
         corridor.anchoredPosition = CellToLocal(room.GridPosition) + (horizontal
             ? new Vector2(pitch.x * 0.5f, 0f)
             : new Vector2(0f, pitch.y * 0.5f));
-        CreateImage(corridor, corridorColor);
+        Image line = CreateImage(corridor, corridorColor);
+        line.enabled = false;
+        corridors.Add((room, neighbour, line));
     }
 
     // 갱신 --------------------------------------------------------------
@@ -358,7 +416,7 @@ public class MinimapUI : MonoBehaviour
         if (room == null) return;
 
         currentRoom = room;
-        visitedRooms.Add(room);
+
     }
 
     /// <summary>플레이어를 품고 있는 방. 통로 위에 있으면 가장 가까운 방으로 친다.</summary>
@@ -383,62 +441,31 @@ public class MinimapUI : MonoBehaviour
         return nearest;
     }
 
-    /// <summary>매 프레임 다시 칠하지 않도록, 바뀐 게 있을 때만 갱신한다.</summary>
-    private void RefreshRoomColorsIfDirty()
-    {
-        int clearedCount = floor.ClearedCount;
-        if (visitedRooms.Count == lastVisitedCount &&
-            clearedCount == lastClearedCount &&
-            ReferenceEquals(currentRoom, lastCurrentRoom))
-        {
-            return;
-        }
-
-        lastVisitedCount = visitedRooms.Count;
-        lastClearedCount = clearedCount;
-        lastCurrentRoom = currentRoom;
-        RefreshRoomColors();
-    }
-
     private void RefreshRoomColors()
     {
+        foreach (var corridor in corridors)
+            corridor.image.enabled = corridor.from.HasEntered && corridor.to.HasEntered;
         foreach (KeyValuePair<RoomInstance, Image> pair in roomIcons)
         {
             RoomInstance room = pair.Key;
             Image image = pair.Value;
             if (room == null || image == null) continue;
-
-            bool visited = visitedRooms.Contains(room);
-            bool discovered = revealEverything || visited ||
-                (revealNeighbours && IsNeighbourOfVisited(room));
-
+            bool visited = room.HasEntered;
+            bool discovered = RoomMapState.Visible(visited);
+            image.gameObject.SetActive(discovered);
             image.enabled = discovered;
-            if (roomLabels.TryGetValue(room, out TMP_Text label))
-            {
-                label.enabled = discovered;
-                label.text = room.IsCombatRoom && room.IsCleared ? "완" : RoomSymbol(room.Kind);
-            }
+            if (!discovered) continue;
+            image.color = ResolveRoomColor(room, visited, room == currentRoom);
+            RoomMapIcon glyph = glyphs[room];
+            glyph.SetSymbol(RoomMapState.Symbol(room.Kind, visited, room.IsCleared, room.HasMapRewards));
+            glyph.color = image.color.grayscale > .55f ? Color.black : Color.white;
+            if (buttons.TryGetValue(room, out Button button)) button.interactable = runManager.CanTravelToRoom(room);
             if (room == floor.ExitRoom && exitMarker != null)
             {
-                exitMarker.enabled = discovered;
-                exitMarker.color = floor.IsCombatCleared ? exitMarkerColor : Color.gray;
+                exitMarker.enabled = visited;
+                exitMarker.color = floor.IsCombatCleared ? exitMarkerColor : new Color(1f, .65f, .2f);
             }
-            if (!discovered) continue;
-
-            image.color = ResolveRoomColor(room, visited, ReferenceEquals(room, currentRoom));
-            if (label != null) label.color = image.color.grayscale > .55f ? Color.black : Color.white;
         }
-    }
-
-    private bool IsNeighbourOfVisited(RoomInstance room)
-    {
-        foreach (RoomDirection direction in RoomDirectionUtility.All)
-        {
-            Vector2Int neighbourCell = room.GridPosition + direction.ToOffset();
-            if (!roomsByCell.TryGetValue(neighbourCell, out RoomInstance neighbour)) continue;
-            if (visitedRooms.Contains(neighbour)) return true;
-        }
-        return false;
     }
 
     private Color ResolveRoomColor(RoomInstance room, bool visited, bool isCurrent)
@@ -464,23 +491,10 @@ public class MinimapUI : MonoBehaviour
         }
     }
 
-    private static string RoomSymbol(RoomKind kind)
-    {
-        switch (kind)
-        {
-            case RoomKind.Start: return "시";
-            case RoomKind.Elite: return "정";
-            case RoomKind.Treasure: return "보";
-            case RoomKind.Shop: return "상";
-            case RoomKind.Boss: return "왕";
-            default: return "전";
-        }
-    }
-
     /// <summary>플레이어 점은 방 안에서의 상대 위치까지 반영해 부드럽게 움직인다.</summary>
     private void UpdatePlayerMarker()
     {
-        if (player == null || currentRoom == null)
+        if (player == null || currentRoom == null || !currentRoom.HasEntered)
         {
             playerMarker.gameObject.SetActive(false);
             return;

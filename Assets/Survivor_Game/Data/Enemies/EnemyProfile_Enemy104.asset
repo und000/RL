@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyProfile_Enemy104
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProfile
   enemyId: Enemy104
-  displayName: "\uD3EC\uC704"
+  displayName: "환형 감시자"
   rank: 2
   maxHealth: 900
   defense: 16
@@ -29,3 +29,5 @@ MonoBehaviour:
   staggerDecayPerSecond: 10
   staggerRecoveryImmunity: 0.5
   eliteStaggerMultiplier: 2
+  encounterDescription: "원형 사격 · 후반 탄 사이 틈 회전\n체력 70% / 40%에서 사격 변화"
+  signatureReward: {fileID: 11400000, guid: 9f1fdf54681000340a398319bda75491, type: 2}

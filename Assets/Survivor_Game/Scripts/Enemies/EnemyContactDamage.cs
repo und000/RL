@@ -12,10 +12,16 @@ public class EnemyContactDamage : MonoBehaviour, IEnemyPoolLifecycle
 
     private float nextDamageTime;
     private EnemyStagger stagger;
-    private void Awake() => stagger = GetComponent<EnemyStagger>();
+    private EnemyHealth health;
+    private void Awake()
+    {
+        stagger = GetComponent<EnemyStagger>();
+        health = GetComponent<EnemyHealth>();
+    }
 
     private void OnCollisionStay2D(Collision2D collision)
     {
+        if (health != null && health.GetCurrentHealth() <= 0) return;
         if (stagger != null && stagger.IsStaggered) return;
         if (Time.time < nextDamageTime)
         {
@@ -28,7 +34,9 @@ public class EnemyContactDamage : MonoBehaviour, IEnemyPoolLifecycle
             return;
         }
 
-        playerHealth.TakeDamage(contactDamage);
+        playerHealth.TakeDamage(contactDamage,
+            health != null && health.Profile != null ? health.Profile.DisplayName : "알 수 없는 적",
+            PlayerDamageKind.Contact);
 
         nextDamageTime = Time.time + damageInterval;
     }

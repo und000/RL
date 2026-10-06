@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public enum HealthBarType
 {
@@ -17,6 +18,15 @@ public class HealthBarView : MonoBehaviour
     [SerializeField, Min(0f)] private float damageTrailDelay = 0.25f;
     [SerializeField, Min(0.01f)] private float damageTrailDuration = 0.45f;
     [SerializeField, Min(0f)] private float deathDisplayDuration = 0.35f;
+    [Header("보스 이름 / 페이즈")]
+    [SerializeField] private Vector2 bossLabelOffset = new Vector2(0f, -44f);
+    [SerializeField, Min(12f)] private float bossLabelFontSize = 22f;
+    private TMP_Text bossLabel;
+    private EnemyPhaseController targetPhase;
+    private EnemyPatternController targetPatterns;
+    private string bossName;
+    private int displayedPhase = -1;
+    private bool displayedChanging;
     [Header("충격 게이지 (체력바 아래 표시)")]
     [SerializeField, InspectorName("충격 게이지 채움 영역")] private RectTransform staggerFillTransform;
     [SerializeField, InspectorName("충격 게이지 이미지")] private Image staggerFillImage;
@@ -69,6 +79,26 @@ public class HealthBarView : MonoBehaviour
         worldCamera = camera;
         targetDied = false;
         releasing = false;
+        targetPhase = newTarget.GetComponent<EnemyPhaseController>();
+        targetPatterns = newTarget.GetComponent<EnemyPatternController>();
+        bossName = newTarget.Profile != null ? newTarget.Profile.DisplayName : "보스";
+        displayedPhase = -1;
+        if (newType == HealthBarType.Boss && bossLabel == null)
+        {
+            var labelRect = new GameObject("BossPhaseLabel", typeof(RectTransform)).GetComponent<RectTransform>();
+            labelRect.SetParent(transform, false);
+            labelRect.anchorMin = new Vector2(0f, 0f);
+            labelRect.anchorMax = new Vector2(1f, 0f);
+            labelRect.anchoredPosition = bossLabelOffset;
+            labelRect.sizeDelta = new Vector2(0f, 32f);
+            bossLabel = labelRect.gameObject.AddComponent<TextMeshProUGUI>();
+            GameFontManager.ApplyFont(bossLabel);
+            bossLabel.fontSize = bossLabelFontSize;
+            bossLabel.alignment = TextAlignmentOptions.Center;
+            bossLabel.raycastTarget = false;
+        }
+        if (bossLabel != null) bossLabel.gameObject.SetActive(newType == HealthBarType.Boss);
+        UpdateBossLabel();
 
         currentHealth = targetHealth.GetCurrentHealth();
         maxHealth = targetHealth.GetMaxHealth();
@@ -91,6 +121,7 @@ public class HealthBarView : MonoBehaviour
 
     private void Update()
     {
+        UpdateBossLabel();
         if (targetDied)
         {
             if (Time.unscaledTime >= deathReleaseTime)
@@ -128,6 +159,19 @@ public class HealthBarView : MonoBehaviour
     {
         // Project after camera follow, impact shake and zoom so both bars stay attached.
         if (healthBarType != HealthBarType.Boss && targetHealth != null) UpdateTrackedPosition();
+    }
+
+    private void UpdateBossLabel()
+    {
+        if (bossLabel == null || healthBarType != HealthBarType.Boss) return;
+        int phase = targetDied ? 0 : targetPhase != null ? targetPhase.CurrentPhase : 1;
+        bool changing = !targetDied && targetPatterns != null && targetPatterns.IsChangingPhase;
+        if (phase == displayedPhase && changing == displayedChanging) return;
+        displayedPhase = phase;
+        displayedChanging = changing;
+        bossLabel.text = bossName + (targetDied ? " · 처치" : " · " + phase + "페이즈") +
+            (changing ? " · 사격 전환 중" : string.Empty);
+        bossLabel.color = changing ? new Color(1f, .75f, .25f) : Color.white;
     }
 
     private void UpdateStagger()
@@ -295,6 +339,8 @@ public class HealthBarView : MonoBehaviour
 
         targetHealth = null;
         targetStagger = null;
+        targetPhase = null;
+        targetPatterns = null;
         manager = null;
         targetDied = false;
         canvasGroup.alpha = 0f;
