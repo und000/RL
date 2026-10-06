@@ -44,6 +44,7 @@ public class RoomInstance : MonoBehaviour
 
     private readonly List<EnemyHealth> livingEnemies = new List<EnemyHealth>();
     private readonly List<RewardPedestal> pedestals = new List<RewardPedestal>();
+    private readonly List<RewardDrop> mapDrops = new List<RewardDrop>();
     private Vector2 lastKillPosition;
     private bool hasKillPosition;
     private RoomRuntimeContext context;
@@ -51,6 +52,7 @@ public class RoomInstance : MonoBehaviour
     private bool cleared;
     private bool combatActive;
     private bool bossChosen;
+    private RoomRewardDefinition chosenBossReward;
     private readonly List<BossChoicePedestal> bossChoices = new List<BossChoicePedestal>();
 
     public RoomKind Kind => kind;
@@ -60,9 +62,22 @@ public class RoomInstance : MonoBehaviour
     public Vector2Int GridPosition { get; private set; }
     public IReadOnlyList<RoomDoor> Doors => doors;
     public bool IsCleared => cleared;
+    public bool HasEntered => entered;
     public bool IsCombatActive => combatActive;
     /// <summary>아직 가져가지 않은 보상 받침대가 남아 있는가.</summary>
     public bool HasPendingRewards => pedestals.Count > 0;
+    public bool HasMapRewards
+    {
+        get
+        {
+            foreach (RewardPedestal pedestal in pedestals)
+                if (pedestal != null && !pedestal.IsClaimed) return true;
+            GetComponentsInChildren(false, mapDrops);
+            foreach (RewardDrop drop in mapDrops)
+                if (drop != null && !drop.IsClaimed) return true;
+            return false;
+        }
+    }
     /// <summary>전투가 없는 방(시작·보물·상점)은 들어가자마자 클리어로 친다.</summary>
     public bool IsCombatRoom =>
         kind == RoomKind.Normal || kind == RoomKind.Elite || kind == RoomKind.Boss;
@@ -75,6 +90,7 @@ public class RoomInstance : MonoBehaviour
         cleared = false;
         combatActive = false;
         bossChosen = false;
+        chosenBossReward = null;
         livingEnemies.Clear();
 
         foreach (RoomDoor door in doors)
@@ -179,6 +195,7 @@ public class RoomInstance : MonoBehaviour
             return false;
         }
         bossChosen = true;
+        chosenBossReward = enemy.Profile != null ? enemy.Profile.SignatureReward : null;
         Track(enemy);
         foreach (BossChoicePedestal choice in bossChoices)
             if (choice != null)
@@ -363,7 +380,8 @@ public class RoomInstance : MonoBehaviour
             return;
         }
 
-        IReadOnlyList<RoomRewardDefinition> drops = context.RewardPlan.GetDrops(kind);
+        IReadOnlyList<RoomRewardDefinition> drops = BossRewardDrops.Build(
+            context.RewardPlan.GetDrops(kind), kind == RoomKind.Boss ? chosenBossReward : null);
         if (drops.Count == 0) return;
 
         Vector2 origin = hasKillPosition ? lastKillPosition : (Vector2)transform.position;
@@ -433,8 +451,14 @@ public class RoomInstance : MonoBehaviour
         }
     }
 
-    private bool IsRewardAllowed(RoomRewardDefinition reward) =>
-        context.WeaponEquipment == null || context.WeaponEquipment.CanOfferReward(reward);
+    private bool IsRewardAllowed(RoomRewardDefinition reward)
+    {
+        if (reward == null) return false;
+        // 손상 칸을 없앤 보드에 수리 보상이 다시 선택지로 나오지 않게 한다.
+        if (reward.Kind == RoomRewardKind.BoardRepair &&
+            !reward.CanGrant(context.Player != null ? context.Player.gameObject : null)) return false;
+        return context.WeaponEquipment == null || context.WeaponEquipment.CanOfferReward(reward);
+    }
 
     /// <summary>영구 개조의 할인을 값에 반영한다. 공짜가 되지는 않는다.</summary>
     private static int ApplyShopDiscount(int price)

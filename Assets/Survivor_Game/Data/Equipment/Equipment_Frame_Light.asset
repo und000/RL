@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Equipment_Frame_Light
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentDefinition
   displayName: "\uACBD\uB7C9 \uACE8\uACA9"
-  description: "\uAC00\uBCBC\uC6CC \uBAB8\uC774 \uBE60\uB974\uAC8C \uC6C0\uC9C1\uC778\uB2E4."
+  description: "전투 중 회피를 시작하면 MP를 회수하는 경량 골격."
   icon: {fileID: 0}
   slot: 0
   grade: 1
@@ -22,3 +22,8 @@ MonoBehaviour:
     value: 0.07
   - stat: 5
     value: 2
+  reactiveEffect:
+    trigger: 2
+    action: 0
+    amount: 3
+    cooldown: 8

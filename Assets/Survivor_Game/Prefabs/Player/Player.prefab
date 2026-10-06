@@ -1668,7 +1668,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   walkSpeed: 6
-  runSpeed: 12
+  runSpeed: 18
 --- !u!114 &4535810899281548162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1749,6 +1749,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDodge
   holdThreshold: 0.18
+  separateSprintInput: 0
   dodgeDistance: 4
   dodgeSpeed: 30
   dodgeCooldown: 0.2

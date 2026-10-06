@@ -18,6 +18,7 @@ public class RunResultUI : MonoBehaviour
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text detailText;
+    [SerializeField] private TMP_Text buildText;
     [SerializeField] private Button restartButton;
     [Tooltip("첫 화면으로 돌아가는 버튼. 비워 두면 다시 시작만 남는다.")]
     [SerializeField] private Button titleButton;
@@ -50,6 +51,7 @@ public class RunResultUI : MonoBehaviour
         if (resultPanel != null) resultPanel.SetActive(false);
         // 첫 캔버스 갱신 전에 폰트를 바꿔야 한글이 한 프레임 네모로 보이지 않는다.
         ApplyFont();
+        ConfigureBuildScroll();
     }
 
     private void Start()
@@ -73,6 +75,7 @@ public class RunResultUI : MonoBehaviour
     {
         GameFontManager.ApplyFont(titleText);
         GameFontManager.ApplyFont(detailText);
+        GameFontManager.ApplyFont(buildText);
         ApplyButtonFont(restartButton, restartLabel);
         ApplyButtonFont(titleButton, titleButtonLabel);
     }
@@ -105,22 +108,33 @@ public class RunResultUI : MonoBehaviour
 
     private void HandleRunCompleted()
     {
-        Prepare(clearTitle, clearDetail);
+        Prepare(clearTitle, clearDetail, false);
     }
 
     private void HandleRunFailed()
     {
         string detail = string.Format(
             failDetailFormat, runManager.ChapterDisplayName, runManager.FloorDisplayName);
-        Prepare(failTitle, detail);
+        Prepare(failTitle, detail, true);
     }
 
-    private void Prepare(string title, string detail)
+    private void Prepare(string title, string detail, bool failed)
     {
         if (pending || shown) return;
 
         if (titleText != null) titleText.text = title;
-        if (detailText != null) detailText.text = detail;
+        if (detailText != null) detailText.text = detail + "\n완료한 전투방 " + runManager.CompletedCombatRooms + "개" +
+            "\n전투 " + FormatTime(runManager.CombatSeconds) + " · 이동 " + FormatTime(runManager.ExplorationSeconds) +
+            "\n보상/보드 " + FormatTime(runManager.RewardSeconds) + "\n\n" +
+            RunResultSummary.PlayerStatus(runManager.Player, failed);
+        if (buildText != null)
+        {
+            Transform player = runManager.Player;
+            PlayerEquipment equipment = player != null ? player.GetComponentInChildren<PlayerEquipment>() : null;
+            CoreBoardController board = FindFirstObjectByType<CoreBoardController>();
+            ChipInventory inventory = FindFirstObjectByType<ChipInventory>();
+            buildText.text = RunResultSummary.Loadout(equipment, board, inventory);
+        }
 
         pending = true;
         // 게임이 멈춘 뒤에도 대기 시간이 흘러야 하므로 실제 시간으로 잰다.
@@ -134,6 +148,40 @@ public class RunResultUI : MonoBehaviour
         pending = false;
         resultPanel.SetActive(true);
         if (pauseOnShow) Time.timeScale = 0f;
+    }
+
+    private void ConfigureBuildScroll()
+    {
+        if (buildText == null) return;
+        RectTransform content = buildText.rectTransform;
+        var viewport = new GameObject("BuildSummaryScroll", typeof(RectTransform), typeof(Image),
+            typeof(RectMask2D), typeof(ScrollRect)).GetComponent<RectTransform>();
+        viewport.SetParent(content.parent, false);
+        viewport.anchorMin = content.anchorMin;
+        viewport.anchorMax = content.anchorMax;
+        viewport.pivot = content.pivot;
+        viewport.anchoredPosition = content.anchoredPosition;
+        viewport.sizeDelta = content.sizeDelta;
+        viewport.GetComponent<Image>().color = new Color(0f, 0f, 0f, .06f);
+        content.SetParent(viewport, false);
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = Vector2.one;
+        content.pivot = new Vector2(.5f, 1f);
+        content.anchoredPosition = Vector2.zero;
+        content.sizeDelta = Vector2.zero;
+        buildText.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        ScrollRect scroll = viewport.GetComponent<ScrollRect>();
+        scroll.content = content;
+        scroll.viewport = viewport;
+        scroll.horizontal = false;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 35f;
+    }
+
+    private static string FormatTime(float seconds)
+    {
+        int total = Mathf.FloorToInt(seconds);
+        return (total / 60) + ":" + (total % 60).ToString("00");
     }
 
     /// <summary>런에서 남긴 것을 가지고 첫 화면으로 돌아가 기체를 손보게 한다.</summary>

@@ -10,6 +10,9 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
     private EnemyScaling scaling = EnemyScaling.None;
     private EnemyStagger stagger;
     private EnemyRank? encounterRank;
+    private EnemyAttackContext attackContext;
+    public EnemyAttackContext AttackContext => attackContext ??
+        (attackContext = new EnemyAttackContext(profile != null ? profile.DisplayName : name));
 
     public EnemyProfile Profile => profile;
     public EnemyRank Rank => encounterRank ?? (profile != null ? profile.Rank : EnemyRank.Normal);
@@ -60,7 +63,11 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
         {
             OnDamaged?.Invoke();
         }
+        bool wasStaggered = stagger != null && stagger.IsStaggered;
         if (currentHealth > 0 && stagger != null) stagger.ApplyImpact(damageData.StaggerImpact);
+        if (damageData.Source != null)
+            damageData.Source.ReportEnemyHit(currentHealth == 0,
+                !wasStaggered && currentHealth > 0 && stagger != null && stagger.IsStaggered);
         OnHealthChanged?.Invoke(currentHealth, GetMaxHealth());
         if (currentHealth == 0)
         {
@@ -108,6 +115,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
     {
         if (dying) return;
         dying = true;
+        attackContext?.Cancel();
         OnDied?.Invoke();
 
         if (TryGetComponent(out EnemyLifecycleVisual lifecycleVisual) &&
@@ -161,6 +169,7 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 
     public void OnEnemyDespawned()
     {
+        attackContext?.Cancel();
         dying = false;
         // 풀에 돌아간 적이 다음 층에서 이전 층 보정을 들고 나오지 않게 되돌린다.
         scaling = EnemyScaling.None;
@@ -169,7 +178,11 @@ public class EnemyHealth : MonoBehaviour, IEnemyPoolLifecycle
 
     private void ResetHealth()
     {
+        attackContext?.Cancel();
+        attackContext = null;
         currentHealth = GetMaxHealth();
         dying = false;
     }
+
+    private void OnDisable() => attackContext?.Cancel();
 }

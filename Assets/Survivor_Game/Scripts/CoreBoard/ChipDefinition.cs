@@ -31,6 +31,10 @@ public class ChipDefinition : ScriptableObject
 
     [Header("효과")]
     [SerializeField] private ChipStatModifier[] modifiers = Array.Empty<ChipStatModifier>();
+    [Header("행동 반응 효과")]
+    [Tooltip("배치 후 활성화된 칩만 적용. 같은 칩 중복/회로 배율로 증폭되지 않습니다.")]
+    [SerializeField] private ReactiveItemEffect reactiveEffect;
+    public ReactiveItemEffect ReactiveEffect => reactiveEffect;
 
     public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
     public string Description => description;

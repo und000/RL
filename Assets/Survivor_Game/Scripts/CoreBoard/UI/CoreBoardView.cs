@@ -14,6 +14,16 @@ using UnityEngine.UI;
 [AddComponentMenu("Core Board/Core Board View")]
 public class CoreBoardView : MonoBehaviour
 {
+    private static CoreBoardView active;
+    private static int blockedThroughFrame = -1;
+    public static bool IsBlockingGameplay => active != null || Time.frameCount <= blockedThroughFrame;
+    public static bool IsMenuOpen => active != null;
+    private bool ownsPause;
+    private float previousTimeScale;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetState() { active = null; blockedThroughFrame = -1; }
+
     [Header("연결")]
     [Tooltip("비워 두면 씬에서 찾는다.")]
     [SerializeField] private CoreBoardController board;
@@ -66,12 +76,16 @@ public class CoreBoardView : MonoBehaviour
     private RectTransform root;
     private RectTransform panel;
     private RectTransform window;
+    private MinimapUI travelMap;
     private RectTransform boardArea;
     private RectTransform chipLayer;
     private RectTransform trayContent;
+    private ScrollRect trayScroll;
     private RectTransform dragLayer;
     private TMP_Text circuitLabel;
     private TMP_Text hintLabel;
+    private TMP_Text chipDetails;
+    private ScrollRect detailsScroll;
     private Camera uiCamera;
 
     private Vector2 boardPixelSize;
@@ -85,6 +99,10 @@ public class CoreBoardView : MonoBehaviour
     private bool dragOverBoard;
     private Vector2Int dragCell;
     private PlacementResult dragResult;
+    private CoreBoardStats previewBaseline;
+    private Vector2Int previewCell;
+    private int previewRotation;
+    private bool previewOverBoard;
 
     public bool IsOpen => isOpen;
 
@@ -93,6 +111,7 @@ public class CoreBoardView : MonoBehaviour
     {
         get
         {
+            if (LevelUpUI.IsPopupOpen) return false;
             if (runManager == null || runManager.CurrentFloor == null) return true;
             foreach (RoomInstance room in runManager.CurrentFloor.Rooms)
             {
@@ -114,6 +133,12 @@ public class CoreBoardView : MonoBehaviour
         uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
             ? canvas.worldCamera
             : null;
+        // 레벨업 카드 위에서도 보드 열람을 지원한다. 스테이지 전환 화면(30000)보다는 아래다.
+        Canvas overlay = GetComponent<Canvas>();
+        if (overlay == null) overlay = gameObject.AddComponent<Canvas>();
+        overlay.overrideSorting = true;
+        overlay.sortingOrder = 20000;
+        if (GetComponent<GraphicRaycaster>() == null) gameObject.AddComponent<GraphicRaycaster>();
     }
 
     private void Start()
@@ -140,6 +165,7 @@ public class CoreBoardView : MonoBehaviour
 
     private void OnDestroy()
     {
+        SetOpen(false);
         if (board != null)
         {
             board.OnBoardChanged -= HandleBoardChanged;
@@ -150,6 +176,11 @@ public class CoreBoardView : MonoBehaviour
 
     private void Update()
     {
+        if (runManager != null && runManager.IsRunOver)
+        {
+            SetOpen(false);
+            return;
+        }
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null) return;
 
@@ -163,10 +194,42 @@ public class CoreBoardView : MonoBehaviour
             dragGhost.SetRotation(dragRotation);
             EvaluateDragTarget();
         }
+        // 드래그 위치를 유지한 채 긴 미리보기를 읽을 수 있다.
+        if (dragGhost != null && detailsScroll != null && Mouse.current != null)
+        {
+            float wheel = Mouse.current.scroll.ReadValue().y;
+            if (wheel != 0f && chipDetails.rectTransform.rect.height > detailsScroll.viewport.rect.height)
+                detailsScroll.verticalNormalizedPosition = Mathf.Clamp01(detailsScroll.verticalNormalizedPosition + wheel * .002f);
+        }
     }
 
     public void SetOpen(bool open)
     {
+        if (open == isOpen)
+        {
+            if (panel != null) panel.gameObject.SetActive(open);
+            return;
+        }
+        if (open && (StageTransitionUI.IsBlockingGameplay || RoomChoiceUI.IsBlockingGameplay || RunPauseUI.IsBlockingGameplay ||
+            (runManager != null && runManager.IsRunOver) || (active != null && active != this))) return;
+        if (open)
+        {
+            StaggerImpactFeedback.CancelActive();
+            active = this;
+            // 보상창 위의 열람은 기존 일시정지를 빌린다. 닫을 때 보상창의 정지를 풀지 않는다.
+            ownsPause = !LevelUpUI.IsPopupOpen && Time.timeScale > 0f;
+            if (ownsPause) { previousTimeScale = Time.timeScale; Time.timeScale = 0f; }
+            root.SetAsLastSibling();
+        }
+        else
+        {
+            if (ownsPause && (runManager == null || !runManager.IsRunOver) &&
+                !LevelUpUI.IsPopupOpen && !StageTransitionUI.IsBlockingGameplay && Mathf.Approximately(Time.timeScale, 0f))
+                Time.timeScale = previousTimeScale;
+            ownsPause = false;
+            if (active == this) active = null;
+            blockedThroughFrame = Time.frameCount;
+        }
         isOpen = open;
         // 루트는 계속 살려 둬야 Update가 돌아 Tab으로 다시 열 수 있다.
         if (panel != null) panel.gameObject.SetActive(open);
@@ -178,6 +241,26 @@ public class CoreBoardView : MonoBehaviour
 
         if (needsRebuild) RebuildAll();
         else RefreshLabels();
+    }
+
+    private void OnDisable() { SetOpen(false); }
+
+    private void LateUpdate()
+    {
+        if (!isOpen || window == null || root.rect.width <= 0f) return;
+        // 지도(왼쪽), 인벤토리(가운데), 설명(오른쪽)을 함께 화면에 맞춘다.
+        float totalWidth = window.sizeDelta.x + 460f + 330f;
+        float totalHeight = Mathf.Max(window.sizeDelta.y, 420f);
+        float scale = Mathf.Min(1f, Mathf.Min((root.rect.width - 32f) / totalWidth, (root.rect.height - 32f) / totalHeight));
+        scale = Mathf.Max(.1f, scale);
+        window.localScale = Vector3.one * scale;
+        window.anchoredPosition = new Vector2(65f * scale, 0f);
+    }
+
+    private void TravelToRoom(RoomInstance room)
+    {
+        if (dragGhost != null || !isOpen || runManager == null) return;
+        runManager.TryTravelToRoom(room, this);
     }
 
     // 화면 뼈대 ---------------------------------------------------------
@@ -201,11 +284,36 @@ public class CoreBoardView : MonoBehaviour
         window = CreateChild("Window", panel);
         window.sizeDelta = windowSize;
         CreateImage(window, windowColor, true);
+        RectTransform mapRect = CreateChild("TravelMap", window);
+        travelMap = mapRect.gameObject.AddComponent<MinimapUI>();
+        travelMap.ConfigureEmbedded(runManager, TravelToRoom);
+        mapRect.anchoredPosition = new Vector2(-windowSize.x * .5f - 240f, 0f);
 
         RectTransform title = CreateChild("Title", window);
         title.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, 30f);
         title.anchoredPosition = new Vector2(0f, windowSize.y * 0.5f - windowPadding.y - 15f);
         CreateLabel(title, "코어 보드", 22f, TextAlignmentOptions.Left);
+        RectTransform detailsPanel = CreateChild("ChipDetails", window);
+        detailsPanel.sizeDelta = new Vector2(320f, 420f);
+        detailsPanel.anchoredPosition = new Vector2(windowSize.x * .5f + 170f, 0f);
+        CreateImage(detailsPanel, windowColor, true);
+        detailsScroll = detailsPanel.gameObject.AddComponent<ScrollRect>();
+        detailsScroll.horizontal = false;
+        detailsScroll.movementType = ScrollRect.MovementType.Clamped;
+        detailsScroll.scrollSensitivity = 24f;
+        RectTransform viewport = CreateChild("Viewport", detailsPanel);
+        viewport.sizeDelta = new Vector2(296f, 396f);
+        viewport.gameObject.AddComponent<RectMask2D>();
+        CreateImage(viewport, Color.clear, true);
+        RectTransform detailsText = CreateChild("Text", viewport);
+        detailsText.anchorMin = new Vector2(0f, 1f);
+        detailsText.anchorMax = new Vector2(1f, 1f);
+        detailsText.pivot = new Vector2(.5f, 1f);
+        detailsText.sizeDelta = new Vector2(0f, 396f);
+        chipDetails = CreateLabel(detailsText, "칩에 마우스를 올리면\n효과와 활성 상태를 확인합니다.", 18f, TextAlignmentOptions.TopLeft);
+        detailsText.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        detailsScroll.viewport = viewport;
+        detailsScroll.content = detailsText;
 
         boardArea = CreateChild("BoardArea", window);
         boardArea.sizeDelta = boardPixelSize;
@@ -227,10 +335,37 @@ public class CoreBoardView : MonoBehaviour
         tray.sizeDelta = new Vector2(windowSize.x - windowPadding.x * 2f, trayHeight);
         tray.anchoredPosition = new Vector2(
             0f, -windowSize.y * 0.5f + windowPadding.y + trayHeight * 0.5f);
-        CreateImage(tray, trayColor, false);
-
-        trayContent = CreateChild("TrayContent", tray);
-        trayContent.sizeDelta = tray.sizeDelta;
+        CreateImage(tray, trayColor, true);
+        trayScroll = tray.gameObject.AddComponent<ScrollRect>();
+        trayScroll.horizontal = false;
+        trayScroll.movementType = ScrollRect.MovementType.Clamped;
+        trayScroll.scrollSensitivity = 30f;
+        RectTransform trayViewport = CreateChild("Viewport", tray);
+        trayViewport.sizeDelta = new Vector2(tray.sizeDelta.x - 18f, trayHeight);
+        trayViewport.anchoredPosition = new Vector2(-9f, 0f);
+        trayViewport.gameObject.AddComponent<RectMask2D>();
+        CreateImage(trayViewport, Color.clear, true);
+        trayContent = CreateChild("TrayContent", trayViewport);
+        trayContent.anchorMin = new Vector2(0f, 1f);
+        trayContent.anchorMax = Vector2.one;
+        trayContent.pivot = new Vector2(.5f, 1f);
+        trayContent.sizeDelta = new Vector2(0f, trayHeight);
+        trayScroll.viewport = trayViewport;
+        trayScroll.content = trayContent;
+        RectTransform bar = CreateChild("Scrollbar", tray);
+        bar.sizeDelta = new Vector2(12f, trayHeight);
+        bar.anchoredPosition = new Vector2(tray.sizeDelta.x * .5f - 6f, 0f);
+        CreateImage(bar, emptyCellColor, true);
+        RectTransform handle = CreateChild("Handle", bar);
+        handle.anchorMin = Vector2.zero;
+        handle.anchorMax = Vector2.one;
+        handle.sizeDelta = Vector2.zero;
+        var scrollbar = bar.gameObject.AddComponent<Scrollbar>();
+        scrollbar.handleRect = handle;
+        scrollbar.targetGraphic = CreateImage(handle, passiveChipColor, true);
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+        scrollbar.navigation = new Navigation { mode = Navigation.Mode.None };
+        trayScroll.verticalScrollbar = scrollbar;
 
         hintLabel = CreateLabel(
             CreateChild("Hint", window), string.Empty, 14f, TextAlignmentOptions.Center);
@@ -312,6 +447,7 @@ public class CoreBoardView : MonoBehaviour
 
     private void RebuildAll()
     {
+        CancelDrag();
         needsRebuild = false;
         RebuildBoardChips();
         RebuildTray();
@@ -348,6 +484,7 @@ public class CoreBoardView : MonoBehaviour
 
     private void RebuildTray()
     {
+        if (dragGhost != null) CancelDrag();
         if (trayContent == null) return;
 
         for (int index = trayContent.childCount - 1; index >= 0; index--)
@@ -356,22 +493,36 @@ public class CoreBoardView : MonoBehaviour
         }
         if (inventory == null) return;
 
-        float slot = cellSize * 2.4f;
-        float startX = -trayContent.sizeDelta.x * 0.5f + slot * 0.5f + 12f;
-        float startY = trayContent.sizeDelta.y * 0.5f - slot * 0.5f - 8f;
-        int perRow = Mathf.Max(1, Mathf.FloorToInt((trayContent.sizeDelta.x - 24f) / slot));
+        float scrollPosition = trayScroll.verticalNormalizedPosition;
+        List<ChipTrayLayout.Entry> entries = ChipTrayLayout.Group(inventory.Chips);
+        float width = trayScroll.viewport.sizeDelta.x;
+        float slot = Mathf.Min(width, cellSize * 2.4f);
+        int perRow = ChipTrayLayout.Columns(width, slot);
+        float height = ChipTrayLayout.Height(entries.Count, perRow, slot, trayHeight);
+        trayContent.sizeDelta = new Vector2(0f, height);
+        float startX = -perRow * slot * .5f + slot * .5f;
 
-        for (int index = 0; index < inventory.Chips.Count; index++)
+        for (int index = 0; index < entries.Count; index++)
         {
-            ChipDefinition chip = inventory.Chips[index];
-            if (chip == null) continue;
-
+            ChipDefinition chip = entries[index].Chip;
+            Vector2 center = new Vector2(startX + index % perRow * slot, -index / perRow * slot - slot * .5f);
+            float scale = ChipTrayLayout.ShapeScale(chip, cellSize, slot - 12f, slot - 40f);
             ChipView view = CreateChipView(
                 trayContent, chip, 0, 0, true, GetChipColor(chip.Category));
-            view.Rect.anchoredPosition = new Vector2(
-                startX + index % perRow * slot,
-                startY - index / perRow * slot) + ShapeCenterOffset(chip, 0);
+            view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(.5f, 1f);
+            view.Rect.localScale = Vector3.one * scale;
+            view.Rect.anchoredPosition = center + new Vector2(0f, 12f) + ShapeCenterOffset(chip, 0) * scale;
+            RectTransform caption = CreateChild("NameAndCount", trayContent);
+            caption.anchorMin = caption.anchorMax = new Vector2(.5f, 1f);
+            caption.sizeDelta = new Vector2(slot - 6f, 30f);
+            caption.anchoredPosition = center + new Vector2(0f, -slot * .5f + 17f);
+            TMP_Text label = CreateLabel(caption, chip.DisplayName + " ×" + entries[index].Count, 12f, TextAlignmentOptions.Center);
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 10f;
+            label.fontSizeMax = 12f;
         }
+        trayScroll.StopMovement();
+        trayScroll.verticalNormalizedPosition = entries.Count == 0 ? 1f : Mathf.Clamp01(scrollPosition);
     }
 
     /// <summary>칩 모양의 무게중심을 기준점으로 되돌리는 보정. 트레이에서 가운데 맞출 때 쓴다.</summary>
@@ -444,12 +595,20 @@ public class CoreBoardView : MonoBehaviour
         if (hintLabel != null)
         {
             hintLabel.text = EditingAllowed
-                ? "드래그로 배치 · R 회전 · 우클릭으로 빼기"
-                : "전투 중에는 배치를 바꿀 수 없습니다";
+                ? "드래그 1개 · R 회전 · 우클릭 빼기 · 휠 스크롤"
+                : LevelUpUI.IsPopupOpen ? "보상 선택 중에는 열람만 가능합니다 · Tab 닫기" : "전투 중에는 열람만 가능합니다 · Tab 닫기";
             hintLabel.color = EditingAllowed
                 ? new Color(0.55f, 0.62f, 0.7f)
                 : new Color(1f, 0.55f, 0.4f);
         }
+    }
+
+    public void ShowChipDetails(ChipView view)
+    {
+        if (dragGhost != null || view == null || view.Chip == null || chipDetails == null) return;
+        string status = view.PlacedId == 0 ? "미장착" : board.State.IsEnergized(board.State.GetChip(view.PlacedId)) ? "활성" : "전원 미연결";
+        chipDetails.text = view.Chip.DisplayName + " · " + status + "\n\n" + RewardPresentation.DescribeChip(view.Chip, board);
+        if (detailsScroll != null) detailsScroll.verticalNormalizedPosition = 1f;
     }
 
     // 드래그 ------------------------------------------------------------
@@ -457,11 +616,13 @@ public class CoreBoardView : MonoBehaviour
     internal void BeginDrag(ChipView source, PointerEventData eventData)
     {
         if (!EditingAllowed || source == null || source.Chip == null) return;
+        if (trayScroll != null) { trayScroll.StopMovement(); trayScroll.enabled = false; }
 
         dragSource = source;
         dragChip = source.Chip;
         dragRotation = source.Rotation;
         dragFromPlacedId = source.PlacedId;
+        previewBaseline = null;
 
         // 원본은 지우지 않고 흐리게만 둔다. 지우면 드래그 이벤트가 끊긴다.
         source.SetTint(new Color(1f, 1f, 1f, 0.25f));
@@ -497,23 +658,56 @@ public class CoreBoardView : MonoBehaviour
     private void EvaluateDragTarget()
     {
         if (dragGhost == null) return;
+        if (!EditingAllowed) { CancelDrag(); RefreshLabels(); return; }
+        if (previewBaseline == board.State.Stats && previewCell == dragCell &&
+            previewRotation == dragRotation && previewOverBoard == dragOverBoard) return;
+        previewBaseline = board.State.Stats;
+        previewCell = dragCell;
+        previewRotation = dragRotation;
+        previewOverBoard = dragOverBoard;
+        CoreBoardState preview = null;
+        PlacedChip proposed = null;
 
         if (!dragOverBoard)
         {
             dragResult = PlacementResult.Fail(PlacementError.OutOfBoard, Vector2Int.zero);
             // 보드 밖은 "트레이로 빼기"라서 꽂힌 칩에게는 유효한 동작이다.
             dragGhost.SetTint(dragFromPlacedId != 0 ? validPreviewColor : invalidPreviewColor);
-            if (hintLabel != null && dragFromPlacedId != 0) hintLabel.text = "놓으면 트레이로 뺍니다";
+            if (hintLabel != null) hintLabel.text = dragFromPlacedId != 0 ? "놓으면 트레이로 뺍니다" : "보드 위에 놓아 주세요";
+            if (dragFromPlacedId != 0) board.State.TryPreviewRemoval(dragFromPlacedId, out preview);
+            ShowDragPreview(preview, null);
             return;
         }
 
         dragResult = board.State.CanPlace(dragChip, dragCell, dragRotation, dragFromPlacedId);
         dragGhost.SetTint(dragResult.IsValid ? validPreviewColor : invalidPreviewColor);
         if (hintLabel != null) hintLabel.text = dragResult.Describe();
+        if (dragResult.IsValid)
+            board.State.TryPreviewPlacement(dragChip, dragCell, dragRotation, dragFromPlacedId, out preview, out proposed);
+        ShowDragPreview(preview, proposed);
+    }
+
+    private void ShowDragPreview(CoreBoardState preview, PlacedChip proposed)
+    {
+        if (chipDetails != null)
+            chipDetails.text = preview != null
+                ? BoardPreviewPresentation.Describe(board.State, preview, dragChip, proposed)
+                : dragChip.DisplayName + "\n\n" + (dragOverBoard ? dragResult.Describe() : "보드 위에서 배치 결과를 확인하세요.");
+        if (detailsScroll != null) detailsScroll.verticalNormalizedPosition = 1f;
+        foreach (ChipView view in boardChipViews)
+        {
+            if (view == null || view == dragSource) continue;
+            if (preview == null) { view.ResetTint(); continue; }
+            bool energized = preview.IsEnergized(preview.GetChip(view.PlacedId));
+            view.SetTint((energized ? GetChipColor(view.Chip.Category) : deadChipColor) * view.Chip.TintColor);
+        }
     }
 
     internal void EndDrag(PointerEventData eventData)
     {
+        if (dragGhost == null) return;
+        if (!EditingAllowed) { CancelDrag(); RefreshLabels(); return; }
+        UpdateDrag(eventData);
         if (dragGhost == null) return;
 
         ChipDefinition chip = dragChip;
@@ -528,7 +722,7 @@ public class CoreBoardView : MonoBehaviour
         if (overBoard && valid)
         {
             if (placedId != 0) board.TryMove(placedId, cell, rotation);
-            else if (board.TryPlace(chip, cell, rotation) && inventory != null)
+            else if (inventory != null && inventory.Contains(chip) && board.TryPlace(chip, cell, rotation))
             {
                 inventory.Remove(chip);
             }
@@ -553,8 +747,13 @@ public class CoreBoardView : MonoBehaviour
 
     private void CancelDrag()
     {
+        if (trayScroll != null) trayScroll.enabled = true;
+        bool wasDragging = dragGhost != null;
         if (dragGhost != null) Destroy(dragGhost.gameObject);
         if (dragSource != null) dragSource.ResetTint();
+        foreach (ChipView view in boardChipViews) if (view != null) view.ResetTint();
+        if (wasDragging && chipDetails != null) chipDetails.text = "칩에 마우스를 올리면\n효과와 활성 상태를 확인합니다.";
+        previewBaseline = null;
 
         dragGhost = null;
         dragSource = null;
@@ -616,6 +815,7 @@ public class CoreBoardView : MonoBehaviour
         RectTransform target, string text, float size, TextAlignmentOptions alignment)
     {
         TextMeshProUGUI label = target.gameObject.AddComponent<TextMeshProUGUI>();
+        GameFontManager.ApplyFont(label);
         label.text = text;
         label.fontSize = size;
         label.alignment = alignment;

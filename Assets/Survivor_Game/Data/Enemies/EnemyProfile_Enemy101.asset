@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyProfile_Enemy101
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProfile
   enemyId: Enemy101
-  displayName: Enemy 101
+  displayName: "초소 파수기"
   rank: 2
   maxHealth: 600
   defense: 10
@@ -29,3 +29,5 @@ MonoBehaviour:
   staggerDecayPerSecond: 10
   staggerRecoveryImmunity: 0.5
   eliteStaggerMultiplier: 2
+  encounterDescription: "조준 산탄 · 후반 이중 사격\n체력 70% / 40%에서 사격 변화"
+  signatureReward: {fileID: 11400000, guid: cce1d773537548249be9c605294b972c, type: 2}

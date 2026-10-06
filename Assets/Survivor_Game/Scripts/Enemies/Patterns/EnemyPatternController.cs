@@ -6,12 +6,16 @@ using UnityEngine;
 public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
 {
     [SerializeField, Min(0.02f)] private float decisionInterval = 0.15f;
+    [SerializeField, Min(0f)] private float phaseTransitionDelay = 0.9f;
+    private float phaseTransitionUntil;
+    public bool IsChangingPhase => Time.time < phaseTransitionUntil;
 
     private readonly List<EnemyAttackPattern> candidates = new List<EnemyAttackPattern>(8);
     private EnemyAttackPattern[] patterns;
     private EnemyPhaseController phaseController;
     private EnemyMovement enemyMovement;
     private EnemyStagger stagger;
+    private EnemyHealth health;
     private Rigidbody2D body;
     private Transform target;
     private Coroutine runningPattern;
@@ -22,8 +26,11 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
     {
         patterns = GetComponents<EnemyAttackPattern>();
         phaseController = GetComponent<EnemyPhaseController>();
+        if (phaseController != null) phaseController.OnPhaseChanged += HandlePhaseChanged;
         enemyMovement = GetComponent<EnemyMovement>();
         stagger = GetComponent<EnemyStagger>();
+        health = GetComponent<EnemyHealth>();
+        if (health != null) health.OnDied += StopRunningPattern;
         body = GetComponent<Rigidbody2D>();
 
         foreach (EnemyAttackPattern pattern in patterns)
@@ -43,8 +50,9 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
 
     private void Update()
     {
+        if (health != null && health.GetCurrentHealth() <= 0) return;
         if (stagger != null && stagger.IsStaggered) return;
-        if (runningPattern != null || target == null || Time.time < nextDecisionTime)
+        if (runningPattern != null || target == null || IsChangingPhase || Time.time < nextDecisionTime)
         {
             return;
         }
@@ -106,6 +114,7 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
         }
 
         yield return pattern.Execute(target);
+        pattern.CancelPresentation();
 
         if (stoppedMovement && enemyMovement != null)
         {
@@ -123,6 +132,7 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
 
     public void OnEnemySpawned()
     {
+        phaseTransitionUntil = 0f;
         StopRunningPattern();
         nextDecisionTime = Time.time;
         foreach (EnemyAttackPattern pattern in patterns)
@@ -133,11 +143,15 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
 
     public void OnEnemyDespawned()
     {
+        phaseTransitionUntil = 0f;
         StopRunningPattern();
     }
 
     private void StopRunningPattern()
     {
+        if (patterns != null)
+            foreach (EnemyAttackPattern pattern in patterns)
+                if (pattern != null) pattern.CancelPresentation();
         if (runningPattern != null)
         {
             StopCoroutine(runningPattern);
@@ -156,5 +170,19 @@ public class EnemyPatternController : MonoBehaviour, IEnemyPoolLifecycle
         StopRunningPattern();
         nextDecisionTime = Time.time + decisionInterval;
         if (body != null) body.linearVelocity = Vector2.zero;
+    }
+
+    private void OnDestroy()
+    {
+        if (health != null) health.OnDied -= StopRunningPattern;
+        if (phaseController != null) phaseController.OnPhaseChanged -= HandlePhaseChanged;
+    }
+
+    private void HandlePhaseChanged(int phase)
+    {
+        if (health != null && health.GetCurrentHealth() <= 0) return;
+        StopRunningPattern();
+        phaseTransitionUntil = Time.time + Mathf.Max(0f, phaseTransitionDelay);
+        nextDecisionTime = Mathf.Max(nextDecisionTime, phaseTransitionUntil);
     }
 }

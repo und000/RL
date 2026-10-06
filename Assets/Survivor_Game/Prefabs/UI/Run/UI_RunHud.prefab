@@ -59,7 +59,7 @@ MonoBehaviour:
   floorBannerText: {fileID: 6999071435144070311}
   bannerDuration: 2
   locationFormat: "{0} \xB7 {1}"
-  progressFormat: "\uBC29 {0} / {1}"
+  progressFormat: "남은 전투방 {0}개"
 --- !u!1 &4875075106906087750
 GameObject:
   m_ObjectHideFlags: 0

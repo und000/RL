@@ -14,7 +14,7 @@ public class RunHudUI : MonoBehaviour
     [SerializeField] private RunManager runManager;
     [Tooltip("'1장 · 2F'처럼 현재 위치를 항상 띄우는 텍스트.")]
     [SerializeField] private TMP_Text locationText;
-    [Tooltip("'방 3 / 8'처럼 층 진행도를 띄우는 텍스트.")]
+    [Tooltip("출구 개방에 필요한 남은 전투방 수를 띄우는 텍스트.")]
     [SerializeField] private TMP_Text progressText;
 
     [Header("층 진입 배너")]
@@ -25,7 +25,7 @@ public class RunHudUI : MonoBehaviour
 
     [Header("문구")]
     [SerializeField] private string locationFormat = "{0} · {1}";
-    [SerializeField] private string progressFormat = "방 {0} / {1}";
+    [SerializeField] private string progressFormat = "남은 전투방 {0}개";
 
     private float bannerHideTime;
 
@@ -107,8 +107,9 @@ public class RunHudUI : MonoBehaviour
         }
         if (progressText != null)
         {
-            progressText.text = string.Format(
-                progressFormat, runManager.ClearedRoomCount, runManager.TotalRoomCount);
+            if (runManager.CurrentFloor == null) { progressText.text = "스테이지 준비 중"; return; }
+            int remaining = runManager.CurrentFloor != null ? runManager.CurrentFloor.RemainingCombatRooms : 0;
+            progressText.text = remaining > 0 ? string.Format(progressFormat, remaining, runManager.TotalRoomCount) : "출구 개방 · " + runManager.ExitDestinationLabel;
         }
     }
 

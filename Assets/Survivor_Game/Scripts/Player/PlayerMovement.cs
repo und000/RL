@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField, Min(0f)] private float walkSpeed = 6f;
-    [SerializeField, Min(0f)] private float runSpeed = 12f;
+    [SerializeField, Min(0f)] private float runSpeed = 18f;
 
     private Rigidbody2D body;
     private Vector2 moveInput;
@@ -49,7 +49,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     /// <summary>
-    /// 전력 질주(대쉬) 상태를 켜고 끈다. Space를 꾹 누르는 판정은 PlayerDodge가 소유하므로
+    /// 전력 질주 상태를 켜고 끈다. 회피·달리기 입력 판정은 PlayerDodge가 소유하므로
     /// 여기서는 키를 직접 읽지 않는다.
     /// </summary>
     public void SetSprinting(bool value)
@@ -64,6 +64,12 @@ public class PlayerMovement : MonoBehaviour
     }
 
     private void Update()
+    {
+        RefreshMoveInput();
+    }
+
+    /// <summary>회피와 방향키를 같은 프레임에 눌러도 Update 순서에 관계없이 새 방향을 사용한다.</summary>
+    public void RefreshMoveInput()
     {
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null || GameInputKeys.IsGameplayBlocked)

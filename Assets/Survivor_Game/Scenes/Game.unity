@@ -1127,7 +1127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   walkSpeed: 6
-  runSpeed: 12
+  runSpeed: 18
 --- !u!114 &859371145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1207,6 +1207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a81f99e1c71a4dc69d66e503dafd3310, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDodge
+  separateSprintInput: 0
   holdThreshold: 0.18
   dodgeDistance: 4
   dodgeSpeed: 30

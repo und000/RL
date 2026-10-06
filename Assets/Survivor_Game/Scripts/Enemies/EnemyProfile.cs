@@ -14,6 +14,12 @@ public class EnemyProfile : ScriptableObject
     [SerializeField] private string enemyId = "Enemy1";
     [SerializeField] private string displayName = "Enemy";
     [SerializeField] private EnemyRank rank = EnemyRank.Normal;
+    [Header("보스 선택 안내")]
+    [SerializeField, TextArea(2, 4)] private string encounterDescription;
+    [Tooltip("선택 보스 처치 후 기존 방 보상에 추가로 떨어뜨리는 보상. 현재는 기존 칩을 사용합니다.")]
+    [SerializeField] private RoomRewardDefinition signatureReward;
+    public string EncounterDescription => encounterDescription;
+    public RoomRewardDefinition SignatureReward => signatureReward;
     [Header("Combat")]
     [SerializeField, Min(1)] private int maxHealth = 10;
     [SerializeField, Min(0)] private int defense;

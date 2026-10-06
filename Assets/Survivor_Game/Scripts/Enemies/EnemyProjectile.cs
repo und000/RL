@@ -26,6 +26,8 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
     private int damage;
     private bool initialized;
     private bool finishing;
+    public EnemyAttackContext AttackContext { get; private set; }
+    public bool SuppressChildEmission { get; private set; }
 
     private void Awake()
     {
@@ -40,8 +42,10 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
         float speed,
         int damage,
         float lifetime,
-        bool alignToDirection = false)
+        bool alignToDirection = false,
+        EnemyAttackContext attackContext = null)
     {
+        if (attackContext != null && attackContext.IsCancelled) return null;
         GameObject instance = PrefabPool.Spawn(prefab, position, Quaternion.identity);
         if (instance == null || !instance.TryGetComponent(out EnemyProjectile projectile))
         {
@@ -52,17 +56,23 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
         {
             projectile.transform.right = direction.normalized;
         }
-        projectile.Initialize(direction, speed, damage, lifetime);
+        projectile.Initialize(direction, speed, damage, lifetime, attackContext);
         return projectile;
     }
 
-    public void Initialize(Vector2 direction, float speed, int newDamage, float lifetime)
+    public void Initialize(Vector2 direction, float speed, int newDamage, float lifetime,
+        EnemyAttackContext attackContext = null)
     {
+        DetachContext();
+        AttackContext = attackContext;
+        SuppressChildEmission = false;
+        if (AttackContext != null) AttackContext.OnCancelled += CancelOwnedAttack;
         Vector2 normalizedDirection = direction.normalized;
         damage = Mathf.Max(1, newDamage);
         expiresAt = Time.time + Mathf.Max(0.01f, lifetime);
         initialized = true;
         finishing = false;
+        if (AttackContext != null && AttackContext.IsCancelled) { CancelOwnedAttack(); return; }
         body.linearVelocity = normalizedDirection * Mathf.Max(0f, speed);
         foreach (IEnemyProjectileLifecycle module in modules)
         {
@@ -84,13 +94,30 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
         {
             return;
         }
-        playerHealth.TakeDamage(damage);
-        Finish(EnemyProjectileFinishReason.Hit, true);
+        playerHealth.TakeDamage(damage, AttackContext != null ? AttackContext.SourceName : "알 수 없는 적",
+            PlayerDamageKind.Projectile);
+        // 사망 콜백이 런의 탄을 회수했으면 중복 반환/자식 발사를 하지 않는다.
+        if (initialized && !finishing) Finish(EnemyProjectileFinishReason.Hit, true);
     }
 
-    public void Cancel()
+    public void Cancel(bool suppressChildren = false)
     {
+        SuppressChildEmission |= suppressChildren;
         if (initialized && !finishing) Finish(EnemyProjectileFinishReason.Cancelled, false);
+    }
+
+    private void CancelOwnedAttack() => Cancel(true);
+
+    private void DetachContext()
+    {
+        if (AttackContext != null) AttackContext.OnCancelled -= CancelOwnedAttack;
+        AttackContext = null;
+    }
+
+    private void OnDisable()
+    {
+        initialized = false;
+        DetachContext();
     }
 
     private void Finish(EnemyProjectileFinishReason reason, bool playImpact)
@@ -116,6 +143,8 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
 
     public void OnPrefabSpawned()
     {
+        DetachContext();
+        SuppressChildEmission = false;
         initialized = false;
         finishing = false;
         expiresAt = 0f;
@@ -124,6 +153,7 @@ public class EnemyProjectile : MonoBehaviour, IPrefabPoolLifecycle
 
     public void OnPrefabDespawned()
     {
+        DetachContext();
         initialized = false;
         if (body != null) body.linearVelocity = Vector2.zero;
     }

@@ -22,5 +22,5 @@ MonoBehaviour:
     value: 14
   - stat: 8
     value: 2.5
-  - stat: 10
-    value: 0.15
+  - stat: 8
+    value: 1.0

@@ -37,7 +37,8 @@ public class EnemyProjectileSpawnOnFinish : MonoBehaviour, IEnemyProjectileLifec
         EnemyProjectile projectile,
         EnemyProjectileFinishReason reason)
     {
-        if (childProjectilePrefab == null || !ShouldSpawn(reason)) return;
+        if (childProjectilePrefab == null || projectile.SuppressChildEmission ||
+            (projectile.AttackContext != null && projectile.AttackContext.IsCancelled) || !ShouldSpawn(reason)) return;
         Vector2 direction = inheritParentDirection
             ? launchDirection : NormalizeOrFallback(fixedDirection);
         EnemyProjectileEmissionScheduler.Schedule(
@@ -51,7 +52,8 @@ public class EnemyProjectileSpawnOnFinish : MonoBehaviour, IEnemyProjectileLifec
             projectileSpeed,
             projectileDamage,
             projectileLifetime,
-            alignProjectileToDirection);
+            alignProjectileToDirection,
+            projectile.AttackContext);
     }
 
     private bool ShouldSpawn(EnemyProjectileFinishReason reason)

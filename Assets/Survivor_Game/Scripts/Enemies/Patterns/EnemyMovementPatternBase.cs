@@ -8,6 +8,7 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
     private EnemyKnockback enemyKnockback;
     private EnemyAwareness awareness;
     private EnemyStagger stagger;
+    private EnemyHealth health;
 
     protected virtual void Awake()
     {
@@ -15,6 +16,8 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
         enemyKnockback = GetComponent<EnemyKnockback>();
         awareness = GetComponent<EnemyAwareness>();
         stagger = GetComponent<EnemyStagger>();
+        health = GetComponent<EnemyHealth>();
+        if (health != null) health.OnDied += InterruptForStagger;
     }
 
     protected virtual void Start()
@@ -33,6 +36,11 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
 
     protected void FixedUpdate()
     {
+        if (health != null && health.GetCurrentHealth() <= 0)
+        {
+            Body.linearVelocity = Vector2.zero;
+            return;
+        }
         if (stagger != null && stagger.IsStaggered)
         {
             Body.linearVelocity = Vector2.zero;
@@ -80,5 +88,10 @@ public abstract class EnemyMovementPatternBase : MonoBehaviour
         {
             Body.linearVelocity = Vector2.zero;
         }
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (health != null) health.OnDied -= InterruptForStagger;
     }
 }

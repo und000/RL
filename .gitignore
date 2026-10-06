@@ -40,3 +40,7 @@ crashlytics-build.properties
 
 # Asset Store tools
 Assets/AssetStoreTools*
+
+# Python verification cache
+__pycache__/
+*.pyc

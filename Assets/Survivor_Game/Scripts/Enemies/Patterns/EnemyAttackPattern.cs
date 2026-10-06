@@ -58,6 +58,7 @@ public abstract class EnemyAttackPattern : MonoBehaviour
     }
 
     protected virtual bool CanExecutePattern(Transform target) => true;
+    public virtual void CancelPresentation() { }
     protected abstract IEnumerator ExecutePattern(Transform target);
 
     private bool IsAvailableInPhase(int phase)

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FloorProfile_C2_F2
   m_EditorClassIdentifier: Assembly-CSharp::FloorProfile
   displayName: 2-2F
-  roomCount: 9
+  roomCount: 5
   eliteRoomCount: 1
   treasureRoomCount: 1
   shopRoomCount: 1
@@ -26,6 +26,8 @@ MonoBehaviour:
     prefabs:
     - {fileID: 2782757341684667721, guid: 6cae29b1c02e1de48875fbf824ad77b5, type: 3}
     - {fileID: 4084806000229509909, guid: 6bdae2a0a4e0fa7459968fdff3452b45, type: 3}
+    - {fileID: 2782757341684667721, guid: 39fb41854ede4c57b38ee0e6ae2f8aa8, type: 3}
+    - {fileID: 2782757341684667721, guid: 0aec1037ed684e03aea2df5694d8d324, type: 3}
   - kind: 2
     prefabs:
     - {fileID: 1680364238983935065, guid: 533e1c6aa0daf55489e06a23d379866c, type: 3}
@@ -39,22 +41,22 @@ MonoBehaviour:
     prefabs:
     - {fileID: 2080990157434974342, guid: b4997f892711fd747bd72dc8c165f73c, type: 3}
   spawnPlan:
-    normalMinCount: 4
-    normalMaxCount: 7
+    normalMinCount: 3
+    normalMaxCount: 5
     normalEnemies:
     - prefab: {fileID: 6911391679415815211, guid: 9857a538ea14f244ebef275c281d6cc8, type: 3}
       weight: 6.6
     - prefab: {fileID: 6911391679415815211, guid: 273e78e349fe4eaa9ecb250fac7e94d1, type: 3}
       weight: 2.2
-    eliteMinCount: 2
-    eliteMaxCount: 3
+    eliteMinCount: 1
+    eliteMaxCount: 1
     eliteEnemies:
     - prefab: {fileID: 6911391679415815211, guid: 273e78e349fe4eaa9ecb250fac7e94d1, type: 3}
       weight: 2
     healthMultiplier: 1.24
     defenseBonus: 2
     experienceMultiplier: 3
-    creditsPerEnemy: 8
+    creditsPerEnemy: 16
     eliteHealthMultiplier: 1.6
     bossHealthMultiplier: 1.1
   rewardPlan:
@@ -175,7 +177,7 @@ MonoBehaviour:
     - kind: 4
       choiceCount: 3
       purchasable: 1
-      priceMultiplier: 3.2
+      priceMultiplier: 1.2
       rewards:
       - reward: {fileID: 11400000, guid: e2dfd7237c69d7a4da70c2f1c169ca37, type: 2}
         weight: 1

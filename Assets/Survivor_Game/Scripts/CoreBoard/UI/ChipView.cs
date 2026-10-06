@@ -10,7 +10,7 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
 public class ChipView : MonoBehaviour,
-    IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler
 {
     private readonly List<Image> cellImages = new List<Image>();
     private readonly List<Vector2Int> cellBuffer = new List<Vector2Int>(8);
@@ -29,6 +29,8 @@ public class ChipView : MonoBehaviour,
 
     /// <summary>보드에 꽂힌 칩이면 그 id, 트레이에 있는 칩이면 0.</summary>
     public int PlacedId { get; private set; }
+
+    public void OnPointerEnter(PointerEventData eventData) { owner?.ShowChipDetails(this); }
 
     public RectTransform Rect
     {

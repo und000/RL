@@ -43,6 +43,7 @@ public class RewardDrop : MonoBehaviour
     private string lastLabelLine;
 
     public RoomRewardDefinition Reward => reward;
+    public bool IsClaimed { get; private set; }
 
     /// <summary>들고 있던 무기를 갈아치우는 경우에는 문구를 달리 보여 준다.</summary>
     private bool ReplacesEquipment =>
@@ -54,6 +55,7 @@ public class RewardDrop : MonoBehaviour
     public void Configure(RoomRewardDefinition definition, Vector2 from, Vector2 to)
     {
         reward = definition;
+        IsClaimed = false;
         tossFrom = from;
         tossTo = to;
         tossElapsed = 0f;
@@ -128,7 +130,8 @@ public class RewardDrop : MonoBehaviour
     private void TryClaim()
     {
         // 효과가 없으면 소모하지 않고 그대로 둔다. 나중에 다쳐서 돌아오면 그때 주우면 된다.
-        if (!reward.Grant(overlappingPlayer)) return;
+        if (IsClaimed || !reward.Grant(overlappingPlayer)) return;
+        IsClaimed = true;
         Destroy(gameObject);
     }
 
@@ -154,6 +157,7 @@ public class RewardDrop : MonoBehaviour
         // 겹쳐야 무엇을 눌러야 하는지 알려 준다. 멀리서는 이름만 보인다.
         if (overlappingPlayer != null)
         {
+            if (!string.IsNullOrEmpty(reward.ReactiveDescription)) line += "\n" + reward.ReactiveDescription;
             line += "\n" + GameInputKeys.InteractPrompt +
                 (ReplacesEquipment ? " 교체" : " 획득");
             if (!reward.CanGrant(overlappingPlayer)) line += "   (" + reward.GetUnavailableReason(overlappingPlayer) + ")";

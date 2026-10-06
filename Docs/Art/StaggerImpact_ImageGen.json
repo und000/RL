@@ -1,0 +1,50 @@
+{
+  "mode": "built-in image_gen",
+  "reference": "User-provided orange weapon impact screenshot; composition reference only",
+  "prompts": {
+    "ring": "Use case: stylized-concept. Asset type: production Unity 2D action-game VFX sprite, RGBA transparent PNG, square composition. Generate one isolated warm amber-orange impact shockwave viewed perfectly front-on, inspired by a forceful metal weapon deflection. A large circular translucent pressure shell with a very thin luminous copper-orange rim, a softly feathered smoky inner band, subtle irregular brighter rim arcs concentrated on the lower-left and right edges, and an almost fully transparent central hole. The image must feel like a fleeting optical impact, not a solid shield or magic emblem. Ring centered exactly, outer diameter about 78% of canvas, generous completely transparent border, rotationally round without perspective. Fine natural soft gradients with tasteful slight wispy breakup. Warm burnt orange, amber, a few yellow-hot rim accents. No central light, no horizontal flare, no flying sparks (these will be separate animated layers), no letters, no glyphs, no symbols, no characters, no environment, no frame, no black or colored backdrop, no checkerboard baked in. Actual transparent background and partial alpha feathering suitable for additive compositing. One sprite only, not a sheet.",
+    "core": "Use case: stylized-concept. Asset type: production Unity 2D action-game VFX sprite, RGBA transparent PNG, square composition. Generate one isolated small intense weapon-contact flash: compact ivory-white hot center fading through pale gold and warm amber-orange into transparent space, a soft radial glow with slightly irregular short flame-like lobes, strong but controlled luminous peak and delicate smoky light scattering around it. Perfectly centered front view, outer visible glow diameter about 70% of canvas; brightest white center only 8% of canvas diameter. This is an instantaneous metal clash impact light, elegant realistic action-game VFX, not a fireball explosion. No ring, no long lens streak, no long spiky star, no sparks (separate particles will supply these), no objects, no text, no border, no environment. Actual transparent background with smooth partial alpha gradients, no opaque black or colored backing and no baked checkerboard. One sprite only.",
+    "flare": "Use case: stylized-concept. Asset type: production Unity 2D action-game VFX sprite, RGBA transparent PNG, landscape about 3:1 aspect ratio. Generate one isolated perfectly horizontal thin amber-orange anamorphic impact flare. A razor-fine continuous golden-white central line, long symmetrical orange tails fading smoothly to invisibility at both ends, a small restrained pale warm center and very narrow soft orange bloom around the line. Horizontal line lies exactly at vertical center. Total light spans 88% of image width; visible vertical glow occupies less than 12% of height, hot center less than 4% of height. Match a metal deflection shockwave: orange rim light, white-hot weapon contact. No circular orb, no ring, no spark particles, no vertical streaks, no multicolored lens artifacts, no text, no objects or background. Actual transparent background including a transparent margin at each end. Smooth partial alpha ready for additive blending. One sprite only, not a screenshot or a sprite sheet."
+  },
+  "edits": [
+    {
+      "name": "ring",
+      "path": "C:\\Users\\NJ\\.codex\\generated_images\\01a106bc-5600-79f2-add0-7b0282c60b3d\\exec-f5d47977-82ee-41d5-b1d5-1d1282b3b234.png",
+      "prompt": "Edit this isolated transparent VFX ring texture. Keep the centered circular front-facing silhouette, warm amber-orange luminous thin outer contour, lower-left and right brighter accents, actual transparent background and square canvas. Make it much less like fire: remove branching flames, lightning veins and thick opaque orange inner band. Enlarge the transparent central hole to roughly 78% of the outer ring diameter. Retain only a thin elegant golden-orange rim and a VERY FAINT translucent smoky band just inside it, like pressure distortion from metal weapon deflection. Outer visible diameter about 80% of canvas with fully transparent margins. Do not add anything: no sparks, no central flash, no horizontal line, no symbols. Soft feathering, almost invisible interior, luminous thin ring. Output RGBA transparency."
+    },
+    {
+      "name": "core",
+      "path": "C:\\Users\\NJ\\.codex\\generated_images\\01a106bc-5600-79f2-add0-7b0282c60b3d\\exec-980e5a5a-54e2-4764-afc8-e70ab354a396.png",
+      "prompt": "Edit this transparent weapon-impact flash texture to be smooth and optical, not fiery. Keep the centered ivory-white brightest core and warm amber outer glow on an actually transparent background. Remove ALL flame tongues, lobes, branching plasma, star spikes and smoky texture. Produce one compact smooth ivory-white contact light about 8% canvas diameter at its core with a soft circular pale gold falloff, fading into a very faint warm orange aureole reaching 65% canvas diameter, then entirely transparent margins. No ring, no sparks, no horizontal streak, no scenery. It should look like a brief hot metal contact flash through a camera lens, NOT a fireball. Preserve real alpha transparency and square canvas."
+    }
+  ],
+  "selected_assets": {
+    "Ring": {
+      "source": "C:\\Users\\NJ\\.codex\\generated_images\\01a106bc-5600-79f2-add0-7b0282c60b3d\\exec-d8b82671-88f5-416c-9874-91738461744c.png",
+      "asset": "U:\\Unity\\RL\\Assets\\Survivor_Game\\Resources\\VFX\\Stagger\\Stagger_Ring.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "pixelsPerUnit": 627.0
+    },
+    "Core": {
+      "source": "C:\\Users\\NJ\\.codex\\generated_images\\01a106bc-5600-79f2-add0-7b0282c60b3d\\exec-04ca1ee5-2907-46db-81e2-2fb380a8489a.png",
+      "asset": "U:\\Unity\\RL\\Assets\\Survivor_Game\\Resources\\VFX\\Stagger\\Stagger_Core.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "pixelsPerUnit": 627.0
+    },
+    "Flare": {
+      "source": "C:\\Users\\NJ\\.codex\\generated_images\\01a106bc-5600-79f2-add0-7b0282c60b3d\\exec-6d1e9701-afec-42a2-bb66-a71756856758.png",
+      "asset": "U:\\Unity\\RL\\Assets\\Survivor_Game\\Resources\\VFX\\Stagger\\Stagger_Flare.png",
+      "size": [
+        2172,
+        724
+      ],
+      "pixelsPerUnit": 181.0
+    }
+  }
+}

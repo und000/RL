@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Chip_Term_Repair
   m_EditorClassIdentifier: Assembly-CSharp::ChipDefinition
   displayName: "\uC790\uAC00 \uC218\uBCF5"
-  description: 
+  description: "적을 붕괴시키면 체력을 수복한다. 전원 연결 필요."
   icon: {fileID: 0}
   tintColor: {r: 1, g: 1, b: 1, a: 1}
   category: 2
@@ -31,3 +31,8 @@ MonoBehaviour:
     value: 12
   - stat: 8
     value: 2
+  reactiveEffect:
+    trigger: 1
+    action: 1
+    amount: 5
+    cooldown: 6

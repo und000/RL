@@ -8,9 +8,12 @@ using UnityEngine.InputSystem;
 [AddComponentMenu("Player/Player Dodge")]
 public class PlayerDodge : MonoBehaviour
 {
+    public event System.Action OnDodgeStarted;
+    [Header("즉시 회피 입력")]
+    [Tooltip("회피는 항상 Space를 누른 순간 한 번 발동합니다. 켜면 Shift로 달리고, 끄면 Space를 계속 눌러 달립니다.")]
+    [SerializeField] private bool separateSprintInput;
     [Header("입력 (Space)")]
-    [Tooltip("이 시간보다 짧게 눌렀다 떼면 회피가 나가고, 이 시간을 넘겨 계속 누르고 있으면 " +
-        "전력 질주(대쉬)만 켜지고 회피는 나가지 않는다.")]
+    [Tooltip("Space 유지 달리기의 시작 시간입니다. 최초 회피는 이 시간을 기다리지 않고 즉시 발동합니다.")]
     [SerializeField, Min(0.01f)] private float holdThreshold = 0.18f;
 
     [Header("회피 이동")]
@@ -39,7 +42,6 @@ public class PlayerDodge : MonoBehaviour
     private float nextDodgeTime;
     private float spacePressedTime;
     private bool spaceHeld;
-    private bool holdBecameSprint;
 
     private void Awake()
     {
@@ -80,32 +82,21 @@ public class PlayerDodge : MonoBehaviour
         if (keyboard.spaceKey.wasPressedThisFrame)
         {
             spaceHeld = true;
-            holdBecameSprint = false;
             spacePressedTime = Time.time;
+            // 유지/키 해제로는 다시 요청하지 않는다. 쿨다운 중 누른 입력도 예약하지 않는다.
+            TryStartDodge();
         }
 
-        // 임계 시간을 넘겨 계속 누르고 있으면 전력 질주로 확정한다.
-        // 이 경우 떼도 회피는 나가지 않는다.
-        if (spaceHeld && keyboard.spaceKey.isPressed &&
-            !holdBecameSprint && Time.time - spacePressedTime >= holdThreshold)
-        {
-            holdBecameSprint = true;
-            playerMovement.SetSprinting(true);
-        }
-
-        if (spaceHeld && keyboard.spaceKey.wasReleasedThisFrame)
-        {
-            spaceHeld = false;
-            if (holdBecameSprint) playerMovement.SetSprinting(false);
-            else TryStartDodge();
-            holdBecameSprint = false;
-        }
+        if (!keyboard.spaceKey.isPressed) spaceHeld = false;
+        bool wantsSprint = separateSprintInput ? keyboard.leftShiftKey.isPressed :
+            spaceHeld && keyboard.spaceKey.isPressed && Time.time - spacePressedTime >= holdThreshold;
+        playerMovement.SetSprinting(!isDodging && wantsSprint);
     }
 
     private void TryStartDodge()
     {
         if (isDodging || Time.time < nextDodgeTime) return;
-
+        playerMovement.RefreshMoveInput();
         Vector2 direction = playerMovement.MoveInput.sqrMagnitude > 0f
             ? playerMovement.MoveInput.normalized
             : playerMovement.LastMoveDirection;
@@ -115,7 +106,6 @@ public class PlayerDodge : MonoBehaviour
     private void ResetSpaceInput()
     {
         spaceHeld = false;
-        holdBecameSprint = false;
         if (playerMovement != null) playerMovement.SetSprinting(false);
     }
 
@@ -129,6 +119,7 @@ public class PlayerDodge : MonoBehaviour
         playerMovement.SetMovementLocked(true);
         playerHealth.SetDodgeInvulnerable(true);
         SetEnemyCollisionIgnored(true);
+        OnDodgeStarted?.Invoke();
 
         float remainingDistance = dodgeDistance;
         while (remainingDistance > 0f)
@@ -215,7 +206,7 @@ public class PlayerDodge : MonoBehaviour
         enemyCollisionIgnored = ignored;
     }
 
-    private void OnDisable()
+    public void CancelForStageTransition()
     {
         StopAllCoroutines();
         IsDodgeMoving = false;
@@ -233,4 +224,6 @@ public class PlayerDodge : MonoBehaviour
         isDodging = false;
         lowerbodyFacing?.EndDash();
     }
+
+    private void OnDisable() => CancelForStageTransition();
 }

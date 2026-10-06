@@ -51,6 +51,7 @@ public class EnemyPhaseController : MonoBehaviour, IEnemyPoolLifecycle
 
     private void HandleHealthChanged(int currentHealth, int maxHealth)
     {
+        if (currentHealth <= 0) return;
         float healthRatio = maxHealth > 0 ? (float)currentHealth / maxHealth : 0f;
         int newPhase = 1;
 
@@ -65,7 +66,7 @@ public class EnemyPhaseController : MonoBehaviour, IEnemyPoolLifecycle
             }
         }
 
-        if (newPhase == CurrentPhase)
+        if (newPhase <= CurrentPhase)
         {
             return;
         }
